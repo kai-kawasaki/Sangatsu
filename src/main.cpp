@@ -201,6 +201,12 @@ void mouse_position_callback(GLFWwindow* window, double xpos, double ypos) {
     std::cout << "Yaw: " << yaw << ", Pitch: " << pitch << "\n";
 }
 
+double scrollOffset = 0.0f;
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+    scrollOffset = (scrollOffset + yoffset >= 0.0) ? scrollOffset + yoffset : 0.0;
+}
+
 double previousTime = 0.0;
 
 int main(void)
@@ -234,6 +240,8 @@ int main(void)
     glfwSwapInterval(1);
 
     glfwSetKeyCallback(window, key_callback);
+
+    glfwSetScrollCallback(window, scroll_callback);
 
     glGenVertexArrays(1, &vertex_array);
     glBindVertexArray(vertex_array);
@@ -324,7 +332,7 @@ int main(void)
         // Set uniform values (placeholders)
         glUniform2f(resolutionLoc, (float)width, (float)height);
         glUniform1f(timeLoc, currentTime);
-        glUniform1f(scrollLoc, 0.0f);
+        glUniform1f(scrollLoc, scrollOffset);
         glUniform3f(camPosLoc, camPosX, camPosY, camPosZ);
         glUniform3f(camTargetLoc, camTarget.x, camTarget.y, camTarget.z);
         glUniform1i(flashlightLoc, flashlightOn);
