@@ -15,6 +15,7 @@
 #include <iostream>
 #include <unordered_set>
 #include <filesystem>
+#include <vector>
 
 #define M_PI 3.14159265358979323846
 
@@ -197,8 +198,6 @@ void mouse_position_callback(GLFWwindow* window, double xpos, double ypos) {
 
     // Update camera direction
     calc_camdir(dx, dy);
-
-    std::cout << "Yaw: " << yaw << ", Pitch: " << pitch << "\n";
 }
 
 double scrollOffset = 0.0f;
@@ -208,6 +207,60 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 }
 
 double previousTime = 0.0;
+
+GLuint ssbo;
+
+struct object {
+    float x;
+    float y;
+    float z;
+
+    object(float x, float y, float z) : x(x), y(y), z(z) {}
+};
+
+void createAndBindSSBO(const std::vector<object>& vecList) {
+    glGenBuffers(1, &ssbo);
+    if (glGetError() != GL_NO_ERROR) {
+        std::cerr << "Error generating SSBO\n";
+        return;
+    }
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    if (glGetError() != GL_NO_ERROR) {
+        std::cerr << "Error binding SSBO\n";
+        return;
+    }
+
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vecList), vecList.data(), GL_STATIC_DRAW);
+    if (glGetError() != GL_NO_ERROR) {
+        std::cerr << "Error setting SSBO data\n";
+        return;
+    }
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo); // Binding point 0
+    if (glGetError() != GL_NO_ERROR) {
+        std::cerr << "Error binding SSBO base\n";
+        return;
+    }
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // Unbind the buffer
+    if (glGetError() != GL_NO_ERROR) {
+        std::cerr << "Error unbinding SSBO\n";
+        return;
+    }
+
+    std::cout << "SSBO created and bound successfully\n";
+}
+
+void updateSSBO(const std::vector<glm::vec3>& newVecList) {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+    if (p) {
+        memcpy(p, newVecList.data(), newVecList.size() * sizeof(glm::vec3));
+        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
 
 int main(void)
 {
@@ -233,10 +286,22 @@ int main(void)
 
     glfwMakeContextCurrent(window);
 
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cerr << "Failed to initialize GLAD\n";
+        return -1;
+    }
+
+    std::vector<object> vecList = {
+        object(5.0f, 0.0f, 5.0f),
+        object(5.0f, 10.0f, 5.0f)
+    };
+
+    // Create and bind the SSBO
+    createAndBindSSBO(vecList);
+
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_position_callback);
   
-    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     glfwSwapInterval(1);
 
     glfwSetKeyCallback(window, key_callback);
@@ -328,6 +393,10 @@ int main(void)
         {
             camPosY += movement;
         }
+
+        // vecList[0] = glm::vec3(vecList[0].x, sin(currentTime), vecList[0].z); // Update the third vector in the SSBO
+        // vecList[1].y += sin(currentTime); // Update the fourth vector in the SSBO
+        // updateSSBO(vecList); // Update the SSBO with the new vector list
 
         // Set uniform values (placeholders)
         glUniform2f(resolutionLoc, (float)width, (float)height);

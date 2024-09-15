@@ -1,8 +1,19 @@
-#version 330 core
+#version 430 core
 #include hg_sdf.glsl
 
 in vec3 color;
 layout (location = 0) out vec4 FragColor;
+
+struct object {
+    float x;
+    float y;
+    float z;
+};
+
+layout (std430, binding = 0) buffer boxes {
+    object box_positions[];
+};
+
 
 precision mediump float;
 
@@ -21,8 +32,6 @@ const float EPSILON = 0.001;
 const float LOD_MULTIPLIER = 60;
 
 
-
-
 struct Light {
   float size;
   vec3 pos;
@@ -36,12 +45,14 @@ struct Light {
 vec2 calcSDF(vec3 pos) {
     float matID = 0.0; //temporary default
 
+    vec3 first = vec3(box_positions[0].x, box_positions[0].y, box_positions[0].z);
+    vec3 second = vec3(box_positions[1].x, box_positions[1].y, box_positions[1].z);
 
     float plane = fPlane(pos, vec3(0.0, 1.0, 0.0), 1.0);
-    float box = fBox(pos-vec3(-4, -0.5, -3), vec3(0.5));
-    float box2 = fBox(pos-vec3(1.5, -0.5, -3), vec3(0.5));
-    float longBox = fBox(pos-vec3(0, -1, -2), vec3(30, 0.5, 0.5));
-    float blob = fBlob(pos-vec3(0, 1, 0));
+    float box = fBox(pos-first, vec3(0.5));
+    float box2 = fBox(pos-vec3(1.5f, -0.5f, -3.0f), vec3(0.5));
+    float longBox = fBox(pos-vec3(0.0f, -1.0f, -2.0f), vec3(30, 0.5, 0.5));
+    float blob = fBlob(pos-second);
 
     //float mengerOld = max(fBox(pos-vec3(0, 2, -10), vec3(2.0)), -getInnerMenger(pos-vec3(0, 2, -10), 2.0));
     float menger = fMenger((pos-vec3(0, 15, -25)), 8, 15.0);
