@@ -129,11 +129,10 @@ double prevMouseX = 0.0, prevMouseY = 0.0;
 double dx = 0.0, dy = 0.0;
 
 // Camera orientation variables
-float yaw = 0.0f; // Yaw is initialized to -90.0 degrees to look along the negative Z-axis
-float pitch = 0.0f;
-float sensitivity = 0.01f; // Mouse sensitivity
+float sensitivity = 1.0f; // Mouse sensitivity
 int renderMode = 1; // Placeholder for render mode
 bool flashlightOn = false; // Placeholder for flashlight state
+int radius = 100.0;
 
 float clamp(float value, float min, float max) {
     if (value < min) return min;
@@ -141,17 +140,51 @@ float clamp(float value, float min, float max) {
     return value;
 }
 
+double theta = 45.0 * M_PI / 180.0;
+double phi = 30.0 * M_PI / 180.0;
+
+// Calculate the right direction as the cross product of the forward direction and the world up vector
+glm::vec3 right(0.0f, 1.0f, 0.0f);
+
+glm::vec3 forward(
+    sin(theta) * cos(phi),
+    cos(theta),
+    sin(theta) * sin(phi)
+);
+
+bool camOriented = false;
+// To ignore the y-component of the forward vector for movement
+glm::vec3 forwardXZ = glm::normalize(glm::vec3(forward.x, 0.0f, forward.z));
+
 void calc_camdir(float dx, float dy) {
     dx *= sensitivity;
     dy *= sensitivity;
 
-    yaw -= dx; // Yaw controls horizontal rotation
-    pitch = clamp(pitch - dy, -M_PI, M_PI); // Pitch controls vertical direction
+    theta += (dy*sensitivity) * M_PI / 180.0;
+    phi += (dx*sensitivity) * M_PI / 180.0;
 
-    // Turn the pitch and yaw value into a normalized direction vector
-    camTarget.x = std::sin(yaw);
-    camTarget.y = pitch;
-    camTarget.z = std::cos(yaw);
+    // Clamp theta to avoid flipping at the poles
+    const double epsilon = 0.01; // Small value to prevent reaching the poles
+    if (theta > M_PI - epsilon) theta = M_PI - epsilon;
+    if (theta < epsilon) theta = epsilon;
+
+    camTarget.x = radius * sin(theta) * cos(phi);
+    camTarget.z = radius * sin(theta) * sin(phi);
+    camTarget.y = radius * cos(theta);
+
+    forward.x = sin(theta) * cos(phi);
+    forward.y = cos(theta);
+    forward.z = sin(theta) * sin(phi);
+
+    // Calculate the right direction as the cross product of the forward direction and the world up vector
+    right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
+    
+    if (!camOriented) {
+        forwardXZ.x = forward.x;
+        forwardXZ.z = forward.z;
+        forwardXZ = glm::normalize(forwardXZ);
+    }
+
     camTarget = glm::normalize(camTarget);
 }
 
@@ -360,31 +393,63 @@ int main(void)
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT);
 
+
         // Check key states and update camera position
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         {
             movement *= 2.0f;
         }
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+
+        if (camOriented)
         {
-            camPosX += movement * sin(yaw);
-            camPosZ += movement * cos(yaw);
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            {
+                camPosX += movement * forward.x;
+                camPosY += movement * forward.y;
+                camPosZ += movement * forward.z;
+            }
+            if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            {
+                camPosX -= movement * forward.x;
+                camPosY -= movement * forward.y;
+                camPosZ -= movement * forward.z;
+            }
+            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            {
+                camPosX -= movement * right.x;
+                camPosY -= movement * right.y;
+                camPosZ -= movement * right.z;
+            }
+            if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            {
+                camPosX += movement * right.x;
+                camPosY += movement * right.y;
+                camPosZ += movement * right.z;
+            }
         }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        {
-            camPosX -= movement * sin(yaw);
-            camPosZ -= movement * cos(yaw);
+        else {
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            {
+                camPosX += movement * forwardXZ.x;
+                camPosZ += movement * forwardXZ.z;
+            }
+            if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            {
+                camPosX -= movement * forwardXZ.x;
+                camPosZ -= movement * forwardXZ.z;
+            }
+            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            {
+                camPosX -= movement * right.x;
+                camPosZ -= movement * right.z;
+            }
+            if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            {
+                camPosX += movement * right.x;
+                camPosZ += movement * right.z;
+            }
         }
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        {
-            camPosX += movement * cos(yaw);
-            camPosZ -= movement * sin(yaw);
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        {
-            camPosX -= movement * cos(yaw);
-            camPosZ += movement * sin(yaw);
-        }
+
         if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
         {
             camPosY -= movement;
