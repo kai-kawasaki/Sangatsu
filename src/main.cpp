@@ -399,6 +399,11 @@ int main(void)
         {
             movement *= 2.0f;
         }
+        camOriented = glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
+        if (camOriented)
+        {
+            movement /= 5.0f;
+        }
 
         if (camOriented)
         {
