@@ -736,6 +736,5 @@ float fMenger(vec3 point, int degree, float size) {
 
         d = max(d,c);
     }
-
     return d*size;
 }

@@ -7,6 +7,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include<SOIL.H>
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -133,6 +135,32 @@ float sensitivity = 1.0f; // Mouse sensitivity
 int renderMode = 1; // Placeholder for render mode
 bool flashlightOn = false; // Placeholder for flashlight state
 int radius = 100.0;
+
+// Texture load test
+//GLuint textureTest;
+
+void loadTexture(const char* filePath, GLuint& textureID) {
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    int width, height;
+    unsigned char* image = SOIL_load_image(filePath, &width, &height, 0, SOIL_LOAD_RGBA);
+    if (image) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        std::cerr << "Failed to load texture: " << filePath << std::endl;
+        return; // Early return if texture loading fails
+    }
+    SOIL_free_image_data(image);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
 
 float clamp(float value, float min, float max) {
     if (value < min) return min;
@@ -301,6 +329,9 @@ int main(void)
     GLuint vertex_array, vertex_buffer, program;
     GLint vpos_location, vcol_location;
     GLint resolutionLoc, timeLoc, scrollLoc, camPosLoc, camTargetLoc, flashlightLoc, renderModeLoc;
+    //GLint textureTestLoc;
+
+    //loadTexture("../../textures/test.png", textureTest);
 
     glfwSetErrorCallback(error_callback);
     if (!glfwInit())
@@ -363,6 +394,7 @@ int main(void)
     camTargetLoc = glGetUniformLocation(program, "u_camTarget");
     flashlightLoc = glGetUniformLocation(program, "u_flashlight");
     renderModeLoc = glGetUniformLocation(program, "u_renderMode");
+    //textureTestLoc = glGetUniformLocation(program, "u_textureTest");
 
     glEnableVertexAttribArray(vpos_location);
     glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE,
@@ -393,6 +425,10 @@ int main(void)
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // Texture binding
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, textureTest);
+        //glUniform1i(textureTestLoc, 0); // 0 corresponds to GL_TEXTURE0
 
         // Check key states and update camera position
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)

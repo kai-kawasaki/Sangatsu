@@ -1,5 +1,5 @@
 #version 430 core
-#include hg_sdf.glsl
+#include "hg_sdf.glsl"
 
 in vec3 color;
 layout (location = 0) out vec4 FragColor;
@@ -25,6 +25,8 @@ uniform vec3 u_camTarget;
 uniform int u_flashlight;
 uniform int u_renderMode;
 
+//uniform sampler2D u_textureTest;
+
 const float MAX_STEPS = 500.0;
 const float MIN_DIST_TO_SDF = 0.000001;
 const float MAX_DIST_TO_TRAVEL = 100.0;
@@ -41,37 +43,71 @@ struct Light {
   float spread;
 };
 
+//vec3 triPlanar(sampler2D texture, vec3 p, vec3 normal) {
+//    return texture(texture, p.xy).rgb;
+//}
+
+vec2 minID(vec2 res1, vec2 res2) {
+    return (res1.x < res2.x) ? res1 : res2;
+}
+
+vec3 getMaterial(vec3 p, float id, vec3 normal) {
+    vec3 m;
+    switch (int(id)) {
+            case 1:
+                m = vec3(1.0, 0.0, 0.0);
+                break;
+            case 2:
+                m = vec3(0.0, 1.0, 0.0);
+                break;
+            case 3:
+                m = vec3(0.0, 0.0, 1.0);
+                break;
+            case 4:
+                m = vec3(1.0, 1.0, 0.0);
+                break;
+            case 5:
+                m = vec3(1.0, 0.0, 1.0);
+                break;
+            case 6:
+                m = vec3(0.0, 1.0, 1.0);
+                break;
+            case 7:
+                m = vec3(1.0, 1.0, 1.0);
+                break;
+            default:
+                m = vec3(1.0);
+                break;
+    }
+    return m;
+}
 
 vec2 calcSDF(vec3 pos) {
-    float matID = 0.0; //temporary default
-
     vec3 first = vec3(box_positions[0].x, box_positions[0].y, box_positions[0].z);
     vec3 second = vec3(box_positions[1].x, box_positions[1].y, box_positions[1].z);
 
-    float plane = fPlane(pos, vec3(0.0, 1.0, 0.0), 1.0);
-    float box = fBox(pos-first, vec3(0.5));
-    float box2 = fBox(pos-vec3(1.5f, -0.5f, -3.0f), vec3(0.5));
-    float longBox = fBox(pos-vec3(0.0f, -1.0f, -2.0f), vec3(30, 0.5, 0.5));
-    float blob = fBlob(pos-second);
+    vec2 plane = vec2(fPlane(pos, vec3(0.0, 1.0, 0.0), 1.0), 7.0);
+    vec2 box = vec2(fBox(pos-first, vec3(0.5)),2.0);
+    vec2 box2 = vec2(fBox(pos-vec3(1.5f, -0.5f, -3.0f), vec3(0.5)), 3.0);
+    vec2 longBox = vec2(fBox(pos-vec3(0.0f, -1.0f, -2.0f), vec3(30, 0.5, 0.5)), 4.0);
+    vec2 blob = vec2(fBlob(pos-second), 5.0);
 
-    //float mengerOld = max(fBox(pos-vec3(0, 2, -10), vec3(2.0)), -getInnerMenger(pos-vec3(0, 2, -10), 2.0));
-    float menger = fMenger((pos-vec3(0, 15, -25)), 8, 15.0);
+    vec2 menger = vec2(fMenger((pos-vec3(0, 15, -25)), 8, 15.0), 6.0);
     vec4 temp;
-    float mandel = mandelbulb(pos-vec3(5, 1, 0), temp);
+    vec2 mandel = vec2(mandelbulb(pos-vec3(5, 1, 0), temp), 1.0);
 
-    float dist = min(plane, box);
-    dist = min(longBox, dist);
-    dist = min(blob, dist);
-    dist = min(box2, dist);
-    //dist = min(mengerOld, dist);
-    dist = min(menger, dist);
-    dist = min(mandel, dist);
+    vec2 dist = minID(plane, box);
+    dist = minID(longBox, dist);
+    dist = minID(blob, dist);
+    dist = minID(box2, dist);
+    dist = minID(menger, dist);
+    dist = minID(mandel, dist);
 
-    return vec2(dist, matID);
+    return dist;
 }
 
 
-float calcAO(vec3 pos, vec3 normal) {
+float calcAO(vec3 pos, vec3 normal) { //Ambient occlusion
     float occ = 0.0;
     float sca = 1.0;
 
@@ -160,7 +196,7 @@ float calcSoftshadowV3(in vec3 ro, in vec3 rd, float mint, float maxt, float w) 
 }
 
 
-vec3 calcLight(Light lightSource, vec3 pos, vec3 normal, vec3 rDirRef, float ambientOcc, vec3 material, float kSpecular) {
+vec3 calcLight(Light lightSource, vec3 pos, vec3 normal, vec3 rDirRef, float ambientOcc, vec3 material, float kSpecular, vec3 color) {
     float kDiffuse = 0.4,
         kAmbient = 0.005;
 
@@ -273,14 +309,16 @@ vec3 render(vec3 rOrig, vec3 rDir) {
         vec4 normalVal = getNormal(pos);
         vec3 normal = normalVal.xyz; //surface normal
         vec3 rDirRef = reflect(rDir, normal); // reflected ray
-        //float matID = normalVal.w;
+        float matID = normalVal.w;
 
         float ambientOcc = calcAO(pos, normal);
 
-        col += calcLight(light1, pos, normal, rDirRef, ambientOcc, vec3(1.0, 1.0, 1.0), 0.5);
-        col += calcLight(light2, pos, normal, rDirRef, ambientOcc, vec3(1.0, 1.0, 1.0), 0.5);
+        vec3 material = getMaterial(pos, matID, normal);
+
+        col += calcLight(light1, pos, normal, rDirRef, ambientOcc, material, 0.5, col);
+        col += calcLight(light2, pos, normal, rDirRef, ambientOcc, material, 0.5, col);
         if (u_flashlight>0) {            
-            col += calcLight(fLight, pos, normal, rDirRef, ambientOcc, vec3(1.0, 1.0, 1.0), 0.5);    
+            col += calcLight(fLight, pos, normal, rDirRef, ambientOcc, material, 0.5, col);
         }
         //col = abs(normal);
     }
@@ -345,7 +383,6 @@ vec3 superSample(int AA)
             col /= 2;
             break;
         case 3:
-            
             col = (render(u_camPos, rCam(vec2(0.66 * nbxy, 0.))) +
                   render(u_camPos, rCam(vec2(0.66 * bxy, 0.66))) +
                   render(u_camPos, rCam(vec2(0.33, 0.33))));
@@ -359,9 +396,7 @@ vec3 superSample(int AA)
             col += render(u_camPos, rCam(e.zy));
             col /= 4;
             break;
-
     }
-
     return col;
 }
 
@@ -370,28 +405,6 @@ void main() {
 
 
     vec3 rOrig = u_camPos; // Works with WASD without old camera rotation
-    //rOrig = rOrig / ((u_scroll+1)*0.1); // New scroll zoom.
-
-    // Old code for camera rotation with mouse.
-    // rOrig.yz *= rotMatrix(mouse.y*3.14);
-    // rOrig.xz *= rotMatrix(mouse.x*2.*3.14);
-    //vec3 rDir = rDir(uv, rOrig, u_camDir, max(0.06,u_scroll*0.05));
-    
-    //vec3 rDir = normalize(vec3(uv.x-.15, uv.y-.2, 1)); // New constant rDir
-    //vec3 rDir = normalize(vec3(uv.x+u_camDir.x, uv.y+u_camDir.y, 1));
-
-    //old uv rendering setup
-    //vec3 col = render(rOrig, rDir(uv, rOrig, rOrig+u_camTarget, max(0.5,(u_scroll*0.05)+0.5)));
-    //old rendering call using new camera module
-    //vec3 col = render(rOrig, rCam(vec2(0.0)));
-
-    //4x supersampling
-    // vec4 e = vec4(0.125, -0.125, 0.375, -0.375);
-    // vec3 col = render(rOrig, rDir(getUV(e.xz), rOrig, rOrig+u_camTarget, max(1,u_scroll*0.05)));
-    // col += render(rOrig, rDir(getUV(e.yw), rOrig, rOrig+u_camTarget, max(1,u_scroll*0.05)));
-    // col += render(rOrig, rDir(getUV(e.wx), rOrig, rOrig+u_camTarget, max(1,u_scroll*0.05)));
-    // col += render(rOrig, rDir(getUV(e.zy), rOrig, rOrig+u_camTarget, max(1,u_scroll*0.05)));
-    // col/=4;
 
     vec3 col = superSample(u_renderMode);
 

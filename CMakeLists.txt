@@ -42,12 +42,3 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${SOIL_DIR}/include")
 # Freetype
 target_link_libraries(${PROJECT_NAME} freetype)
 target_include_directories(${PROJECT_NAME} PRIVATE "${FREETYPE_DIR}/include")
-
-# Custom command to run the executable after build
-add_custom_command(
-    TARGET ${PROJECT_NAME}
-    POST_BUILD
-    COMMAND ${EXECUTABLE_OUTPUT_PATH}/${PROJECT_NAME}.exe
-    WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
-    COMMENT "Running ${PROJECT_NAME}..."
-)
