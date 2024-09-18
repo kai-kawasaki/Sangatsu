@@ -9,9 +9,9 @@
 
 #include<SOIL.H>
 
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstddef>
+#include <cstdio>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -131,13 +131,10 @@ double prevMouseX = 0.0, prevMouseY = 0.0;
 double dx = 0.0, dy = 0.0;
 
 // Camera orientation variables
-float sensitivity = 1.0f; // Mouse sensitivity
+float sensitivity = 0.5f; // Mouse sensitivity
 int renderMode = 1; // Placeholder for render mode
 bool flashlightOn = false; // Placeholder for flashlight state
 int radius = 100.0;
-
-// Texture load test
-//GLuint textureTest;
 
 void loadTexture(const char* filePath, GLuint& textureID) {
     glGenTextures(1, &textureID);
@@ -331,8 +328,6 @@ int main(void)
     GLint resolutionLoc, timeLoc, scrollLoc, camPosLoc, camTargetLoc, flashlightLoc, renderModeLoc;
     //GLint textureTestLoc;
 
-    //loadTexture("../../textures/test.png", textureTest);
-
     glfwSetErrorCallback(error_callback);
     if (!glfwInit())
         exit(EXIT_FAILURE);
@@ -354,6 +349,26 @@ int main(void)
         std::cerr << "Failed to initialize GLAD\n";
         return -1;
     }
+
+    // Textures
+
+    // testTexture
+    GLuint testTexture;
+    glGenTextures(1, &testTexture);
+    glBindTexture(GL_TEXTURE_2D, testTexture);
+    // Texture wrapping parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // Texture filtering parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // Load image
+    loadTexture("../../textures/test.png", testTexture);
+
+    program = createShaderProgram("../../shaders/vertex.glsl", "../../shaders/fragment.glsl");
+    glUseProgram(program);
+
+    //glUniform1i(glGetUniformLocation(program, "u_textureTest"), 0);
 
     std::vector<object> vecList = {
         object(5.0f, 0.0f, 5.0f),
@@ -379,10 +394,6 @@ int main(void)
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    program = createShaderProgram("../../shaders/vertex.glsl", "../../shaders/fragment.glsl");
-
-    glUseProgram(program);
-
     vpos_location = glGetAttribLocation(program, "in_position");
     vcol_location = glGetAttribLocation(program, "vCol");
 
@@ -395,6 +406,11 @@ int main(void)
     flashlightLoc = glGetUniformLocation(program, "u_flashlight");
     renderModeLoc = glGetUniformLocation(program, "u_renderMode");
     //textureTestLoc = glGetUniformLocation(program, "u_textureTest");
+
+//    // Texture binding
+//    glActiveTexture(GL_TEXTURE0);
+//    glBindTexture(GL_TEXTURE_2D, textureTest);
+//    glUniform1i(textureTestLoc, 0); // 0 corresponds to GL_TEXTURE0
 
     glEnableVertexAttribArray(vpos_location);
     glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE,
@@ -424,11 +440,6 @@ int main(void)
         glfwGetFramebufferSize(window, &width, &height);
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        // Texture binding
-        //glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_2D, textureTest);
-        //glUniform1i(textureTestLoc, 0); // 0 corresponds to GL_TEXTURE0
 
         // Check key states and update camera position
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
@@ -512,6 +523,10 @@ int main(void)
         glUniform3f(camTargetLoc, camTarget.x, camTarget.y, camTarget.z);
         glUniform1i(flashlightLoc, flashlightOn);
         glUniform1i(renderModeLoc, renderMode);
+
+        // bind textures on corresponding texture units
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, testTexture);
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
 

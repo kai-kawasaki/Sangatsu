@@ -25,7 +25,7 @@ uniform vec3 u_camTarget;
 uniform int u_flashlight;
 uniform int u_renderMode;
 
-//uniform sampler2D u_textureTest;
+uniform sampler2D programTexture1;
 
 const float MAX_STEPS = 500.0;
 const float MIN_DIST_TO_SDF = 0.000001;
@@ -43,22 +43,28 @@ struct Light {
   float spread;
 };
 
-//vec3 triPlanar(sampler2D texture, vec3 p, vec3 normal) {
-//    return texture(texture, p.xy).rgb;
-//}
+vec3 triPlanar(sampler2D tex, vec3 p, vec3 normal, float size) {
+    p*=(1.0/size);
+    normal = abs(normal);
+    normal = pow(normal, vec3(5.0));
+    normal /= normal.x + normal.y + normal.z;
+    return (texture(tex, p.xy * 0.5 + 0.5) * normal.z +
+    texture(tex, p.xz * 0.5 + 0.5) * normal.y +
+    texture(tex, p.yz * 0.5 + 0.5) * normal.x).rgb;
+}
 
 vec2 minID(vec2 res1, vec2 res2) {
     return (res1.x < res2.x) ? res1 : res2;
 }
 
-vec3 getMaterial(vec3 p, float id, vec3 normal) {
+vec3 getMaterial(vec3 p, float id, vec3 normal, float size) {
     vec3 m;
     switch (int(id)) {
             case 1:
                 m = vec3(1.0, 0.0, 0.0);
                 break;
             case 2:
-                m = vec3(0.0, 1.0, 0.0);
+                m = triPlanar(programTexture1, p, normal, size);
                 break;
             case 3:
                 m = vec3(0.0, 0.0, 1.0);
@@ -214,7 +220,7 @@ vec3 calcLight(Light lightSource, vec3 pos, vec3 normal, vec3 rDirRef, float amb
 
     float shadow = 1.0;
     if (light > 0.001) { // no need to calculate shadow if we're in the dark
-        shadow = calcSoftshadowV3(pos, lRay, 0.01, 3.0, lightSource.size);
+        shadow = calcSoftshadow(pos, lRay, 0.01, 3.0, lightSource.size);
     }
     vec3 dif = light*kDiffuse*iDiffuse*max(dot(lRay, normal), 0.)*shadow;
     vec3 spec = light*kSpecular*iSpecular*pow(max(dot(lRay, rDirRef), 0.), alpha_phong)*shadow;
@@ -313,7 +319,7 @@ vec3 render(vec3 rOrig, vec3 rDir) {
 
         float ambientOcc = calcAO(pos, normal);
 
-        vec3 material = getMaterial(pos, matID, normal);
+        vec3 material = getMaterial(pos, matID, normal, 0.5);
 
         col += calcLight(light1, pos, normal, rDirRef, ambientOcc, material, 0.5, col);
         col += calcLight(light2, pos, normal, rDirRef, ambientOcc, material, 0.5, col);
