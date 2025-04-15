@@ -89,25 +89,34 @@ vec3 getMaterial(vec3 p, float id, vec3 normal, float size) {
 }
 
 vec2 calcSDF(vec3 pos) {
-    vec3 first = vec3(box_positions[0].x, box_positions[0].y, box_positions[0].z);
-    vec3 second = vec3(box_positions[1].x, box_positions[1].y, box_positions[1].z);
 
-    vec2 plane = vec2(fPlane(pos, vec3(0.0, 1.0, 0.0), 1.0), 7.0);
-    vec2 box = vec2(fBox(pos-first, vec3(0.5)),2.0);
-    vec2 box2 = vec2(fBox(pos-vec3(1.5f, -0.5f, -3.0f), vec3(0.5)), 3.0);
-    vec2 longBox = vec2(fBox(pos-vec3(0.0f, -1.0f, -2.0f), vec3(30, 0.5, 0.5)), 4.0);
-    vec2 blob = vec2(fBlob(pos-second), 5.0);
+//    vec2 plane = ;
+    vec2 dist = vec2(fPlane(pos, vec3(0.0, 1.0, 0.0), 1.0), 7.0);
 
-    vec2 menger = vec2(fMenger((pos-vec3(0, 15, -25)), 8, 15.0), 6.0);
-    vec4 temp;
-    vec2 mandel = vec2(mandelbulb(pos-vec3(5, 1, 0), temp), 1.0);
-
-    vec2 dist = minID(plane, box);
-    dist = minID(longBox, dist);
-    dist = minID(blob, dist);
-    dist = minID(box2, dist);
-    dist = minID(menger, dist);
-    dist = minID(mandel, dist);
+    for (int i = 0; i < box_positions.length(); i++) {
+        vec3 location = vec3(box_positions[i].x, box_positions[i].y, box_positions[i].z);
+        dist = minID(vec2(fBox(pos-location, vec3(0.5)),2.0), dist);
+    }
+    
+//    vec3 first = vec3(box_positions[0].x, box_positions[0].y, box_positions[0].z);
+//    vec3 second = vec3(box_positions[1].x, box_positions[1].y, box_positions[1].z);
+//
+//    vec2 plane = vec2(fPlane(pos, vec3(0.0, 1.0, 0.0), 1.0), 7.0);
+//    vec2 box = vec2(fBox(pos-first, vec3(0.5)),2.0);
+//    vec2 box2 = vec2(fBox(pos-vec3(1.5f, -0.5f, -3.0f), vec3(0.5)), 3.0);
+//    vec2 longBox = vec2(fBox(pos-vec3(0.0f, -1.0f, -2.0f), vec3(30, 0.5, 0.5)), 4.0);
+//    vec2 blob = vec2(fBlob(pos-second), 5.0);
+//
+//    vec2 menger = vec2(fMenger((pos-vec3(0, 15, -25)), 8, 15.0), 6.0);
+//    vec4 temp;
+//    vec2 mandel = vec2(mandelbulb(pos-vec3(5, 1, 0), temp), 1.0);
+//
+//    vec2 dist = minID(plane, box);
+//    dist = minID(longBox, dist);
+//    dist = minID(blob, dist);
+//    dist = minID(box2, dist);
+//    dist = minID(menger, dist);
+//    dist = minID(mandel, dist);
 
     return dist;
 }

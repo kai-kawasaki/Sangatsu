@@ -141,7 +141,7 @@ void loadTexture(const char* filePath, GLuint& textureID) {
     glBindTexture(GL_TEXTURE_2D, textureID);
 
     int width, height;
-    unsigned char* image = SOIL_load_image(filePath, &width, &height, 0, SOIL_LOAD_RGBA);
+    unsigned char* image = SOIL_load_image(filePath, &width, &height, nullptr, SOIL_LOAD_RGBA);
     if (image) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
         glGenerateMipmap(GL_TEXTURE_2D);
@@ -289,7 +289,7 @@ void createAndBindSSBO(const std::vector<object>& vecList) {
         return;
     }
 
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vecList), vecList.data(), GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, vecList.size() * sizeof(object), vecList.data(), GL_STATIC_DRAW);
     if (glGetError() != GL_NO_ERROR) {
         std::cerr << "Error setting SSBO data\n";
         return;
@@ -310,17 +310,31 @@ void createAndBindSSBO(const std::vector<object>& vecList) {
     std::cout << "SSBO created and bound successfully\n";
 }
 
-void updateSSBO(const std::vector<glm::vec3>& newVecList) {
+// void updateSSBO(const std::vector<glm::vec3>& newVecList) {
+//     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+//     GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+//     if (p) {
+//         memcpy(p, newVecList.data(), newVecList.size() * sizeof(glm::vec3));
+//         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+//     }
+//     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+// }
+
+void updateSSBO(const std::vector<object>& newObjList) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-    GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
-    if (p) {
-        memcpy(p, newVecList.data(), newVecList.size() * sizeof(glm::vec3));
-        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-    }
+    // Option 1: Use glBufferSubData if the buffer size remains the same
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, newObjList.size() * sizeof(object), newObjList.data());
+    // Option 2: Map the buffer and memcpy
+    // void* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+    // if (p) {
+    //     memcpy(p, newObjList.data(), newObjList.size() * sizeof(object));
+    //     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    // }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
-int main(void)
+
+int main()
 {
     GLFWwindow* window;
     GLuint vertex_array, vertex_buffer, program;
@@ -371,8 +385,10 @@ int main(void)
     //glUniform1i(glGetUniformLocation(program, "u_textureTest"), 0);
 
     std::vector<object> vecList = {
-        object(5.0f, 0.0f, 5.0f),
-        object(5.0f, 10.0f, 5.0f)
+        object(3.0f, 0.0f, 5.0f),
+        object(3.0f, 10.0f, 5.0f),
+        object(5.0f, 5.0f, 5.0f),
+        object(6.0f, 5.0f, 5.0f)
     };
 
     // Create and bind the SSBO
@@ -510,6 +526,11 @@ int main(void)
         {
             camPosY += movement;
         }
+
+        // vecList[2].x += sin(currentTime);
+        // vecList[3].y += sin(currentTime);
+        //
+        // updateSSBO(vecList);
 
         // vecList[0] = glm::vec3(vecList[0].x, sin(currentTime), vecList[0].z); // Update the third vector in the SSBO
         // vecList[1].y += sin(currentTime); // Update the fourth vector in the SSBO
