@@ -30,38 +30,7 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Fixed SSBOs for object positions saved in C++ for shader use.">
-      <change afterPath="$PROJECT_DIR$/include/Application.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/Camera.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/Globals.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/InputManager.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/Object.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/RayMarcher.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/SSBOManager.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/Shader.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/ShaderPreprocessor.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/Texture.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/Utilities.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/Vertex.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/include/Window.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Application.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Camera.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Globals.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/InputManager.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/RayMarcher.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/SSBOManager.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Shader.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/ShaderPreprocessor.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Texture.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Utilities.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Window.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
-    </list>
-    <list id="4902a581-71cf-4ebf-8301-160d250f651e" name="Changes by Kai" comment="">
-      <change beforePath="$PROJECT_DIR$/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/fragment.glsl" afterDir="false" />
-    </list>
+    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Restructured logic from main.cpp into classes." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -122,7 +91,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "CMake Application.opengl-mingw-boilerplate.executor": "Debug",
+    "CMake Application.opengl-mingw-boilerplate.executor": "Run",
     "RunOnceActivity.RadMigrateCodeStyle": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.cidr.known.project.marker": "true",
@@ -182,7 +151,7 @@
       <workItem from="1744921764045" duration="362000" />
       <workItem from="1744922135254" duration="126000" />
       <workItem from="1744922271655" duration="3079000" />
-      <workItem from="1744925866137" duration="3467000" />
+      <workItem from="1744925866137" duration="3839000" />
     </task>
     <task id="LOCAL-00001" summary="Fixed SSBOs for object positions saved in C++ for shader use.">
       <option name="closed" value="true" />
@@ -192,7 +161,31 @@
       <option name="project" value="LOCAL" />
       <updated>1744750904896</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Restructured logic from main.cpp into classes.">
+      <option name="closed" value="true" />
+      <created>1744929614459</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1744929614459</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Deleted old camera system.">
+      <option name="closed" value="true" />
+      <created>1744929675617</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1744929675617</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Restructured logic from main.cpp into classes.">
+      <option name="closed" value="true" />
+      <created>1744929722456</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1744929722456</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -216,6 +209,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Fixed SSBOs for object positions saved in C++ for shader use." />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed SSBOs for object positions saved in C++ for shader use." />
+    <MESSAGE value="Deleted old camera system." />
+    <MESSAGE value="Restructured logic from main.cpp into classes." />
+    <option name="LAST_COMMIT_MESSAGE" value="Restructured logic from main.cpp into classes." />
   </component>
 </project>
