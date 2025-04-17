@@ -13,9 +13,35 @@ set(GLM_DIR "${EXT_DIR}/glm")
 set(SOIL_DIR "${EXT_DIR}/soil")
 set(FREETYPE_DIR "${EXT_DIR}/freetype")
 link_directories(${GLFW_DIR}/lib ${SOIL_DIR}/lib ${FREETYPE_DIR}/lib)
+include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # Add the executable
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES}
+        include/Application.h
+        include/Window.h
+        include/InputManager.h
+        include/ShaderPreprocessor.h
+        include/Shader.h
+        include/Texture.h
+        include/Camera.h
+        include/SSBOManager.h
+        include/Object.h
+        include/Vertex.h
+        include/RayMarcher.h
+        include/Utilities.h
+        src/Application.cpp
+        src/Window.cpp
+        src/InputManager.cpp
+        src/ShaderPreprocessor.cpp
+        src/Shader.cpp
+        src/Texture.cpp
+        src/Camera.cpp
+        src/SSBOManager.cpp
+        src/Object.cpp
+        src/RayMarcher.cpp
+        src/Utilities.cpp
+        include/Globals.h
+        src/Globals.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
