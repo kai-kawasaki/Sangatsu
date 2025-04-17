@@ -341,24 +341,15 @@ vec3 render(vec3 rOrig, vec3 rDir) {
 }
 
 
-// Camera system explained here:
-// https://www.youtube.com/watch?v=PBxuVlp7nuM
-// Old module and has been replaced
-// vec3 rDir(vec2 uv, vec3 rOrig, vec3 lookat, float zoom) {
-//     vec3 forward = normalize(lookat-rOrig),
-//         right = normalize(cross(forward, vec3(0, 1., 0))),
-//         up = cross(right, forward),
-//         center = forward*zoom,
-//         intersection = center + uv.x*right + uv.y*up,
-//         dir = normalize(intersection);
-//     return dir;
-// }
+
 
 // method that can generat uv coordinates with an offset for supersampling
 vec2 getUV(vec2 offset) {
     return ((gl_FragCoord.xy + offset) - 0.5 * u_resolution.xy) / u_resolution.y;
 }
 
+// Camera system explained here:
+// https://www.youtube.com/watch?v=PBxuVlp7nuM
 // new camera module that is cleaner to call
 vec3 rCam(vec2 offset) {
     vec2 uv = getUV(offset);
