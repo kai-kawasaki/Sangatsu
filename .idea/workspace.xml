@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="BackendCodeEditorMiscSettings">
+    <option name="/Default/RiderDebugger/RiderRestoreDecompile/RestoreDecompileSetting/@EntryValue" value="false" type="bool" />
+    <option name="/Default/Housekeeping/GlobalSettingsUpgraded/IsUpgraded/@EntryValue" value="true" type="bool" />
+    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
+    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexRemoved" />
+  </component>
+  <component name="CMakePresetLoader">{
+  &quot;useNewFormat&quot;: true
+}</component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeReloadState">
+    <option name="reloaded" value="true" />
+  </component>
+  <component name="CMakeRunConfigurationManager">
+    <generated>
+      <config projectName="opengl-mingw-boilerplate" targetName="glad" />
+      <config projectName="opengl-mingw-boilerplate" targetName="opengl-mingw-boilerplate" />
+    </generated>
+  </component>
+  <component name="CMakeSettings" AUTO_RELOAD="true">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Fixed SSBOs for object positions saved in C++ for shader use.">
+      <change afterPath="$PROJECT_DIR$/include/Application.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/Camera.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/Globals.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/InputManager.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/Object.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/RayMarcher.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/SSBOManager.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/Shader.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/ShaderPreprocessor.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/Texture.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/Utilities.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/Vertex.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/Window.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Application.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Camera.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Globals.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/InputManager.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/RayMarcher.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/SSBOManager.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Shader.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/ShaderPreprocessor.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Texture.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Utilities.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Window.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
+    </list>
+    <list id="4902a581-71cf-4ebf-8301-160d250f651e" name="Changes by Kai" comment="">
+      <change beforePath="$PROJECT_DIR$/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/fragment.glsl" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Kyle-Zagers&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/kai-kawasaki/Sangatsu.git&quot;,
+    &quot;accountId&quot;: &quot;6724f9bd-a654-46ac-872a-4d43fb019194&quot;
+  }
+}</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+  </component>
+  <component name="ProjectApplicationVersion">
+    <option name="ide" value="CLion" />
+    <option name="majorVersion" value="2024" />
+    <option name="minorVersion" value="2.1" />
+    <option name="productBranch" value="Classic" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="2sDmNDJ5W61LtmNJO9wABAgmz3l" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "CMake Application.opengl-mingw-boilerplate.executor": "Debug",
+    "RunOnceActivity.RadMigrateCodeStyle": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "RunOnceActivity.west.config.association.type.startup.service": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/kylez/Sangatsu/CMakeLists.txt",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager" selected="CMake Application.opengl-mingw-boilerplate">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="glad" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="opengl-mingw-boilerplate" TARGET_NAME="glad" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="opengl-mingw-boilerplate" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="opengl-mingw-boilerplate" TARGET_NAME="opengl-mingw-boilerplate" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="opengl-mingw-boilerplate" RUN_TARGET_NAME="opengl-mingw-boilerplate">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="CMake Application.glad" />
+      <item itemvalue="CMake Application.opengl-mingw-boilerplate" />
+    </list>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="" />
+      <created>1737998478800</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1737998478800</updated>
+      <workItem from="1737998480032" duration="516000" />
+      <workItem from="1738000613517" duration="595000" />
+      <workItem from="1740769611918" duration="11000" />
+      <workItem from="1744745996123" duration="1420000" />
+      <workItem from="1744747443001" duration="670000" />
+      <workItem from="1744748127541" duration="223000" />
+      <workItem from="1744748901042" duration="4777000" />
+      <workItem from="1744921764045" duration="362000" />
+      <workItem from="1744922135254" duration="126000" />
+      <workItem from="1744922271655" duration="3079000" />
+      <workItem from="1744925866137" duration="3467000" />
+    </task>
+    <task id="LOCAL-00001" summary="Fixed SSBOs for object positions saved in C++ for shader use.">
+      <option name="closed" value="true" />
+      <created>1744750904896</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1744750904896</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VCPKGProject">
+    <isAutomaticCheckingOnLaunch value="false" />
+    <isAutomaticFoundErrors value="true" />
+    <isAutomaticReloadCMake value="true" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Fixed SSBOs for object positions saved in C++ for shader use." />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed SSBOs for object positions saved in C++ for shader use." />
+  </component>
+</project>
