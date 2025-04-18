@@ -118,18 +118,6 @@ float calcAO(vec3 pos, vec3 normal) { //Ambient occlusion
 }
 
 
-// cut1 and cut2 define the center cone and the max width of the light
-// they are cosines of the corresponding angles, so a center cone of
-// 15 degrees and a max width of 30 degrees would correspond to
-// cut1 = 0.9659258 and cut2 = 0.8660254
-// lr is the normalized light ray
-float calcDirLight(vec3 p, vec3 lookfrom, vec3 lookat, in float cut1, in float cut2) {
-    vec3 lr = normalize(lookfrom - p);
-    float intensity = dot(lr, normalize(lookfrom - lookat));
-    return smoothstep(cut2, cut1, intensity);
-}
-
-
 // https://iquilezles.org/articles/rmshadows
 
 float calcSoftshadow(in vec3 ro, in vec3 rd, float mint, float maxt, float w) {
