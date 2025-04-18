@@ -30,7 +30,9 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Restructured logic from main.cpp into classes." />
+    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Restructured logic from main.cpp into classes.">
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -151,7 +153,7 @@
       <workItem from="1744921764045" duration="362000" />
       <workItem from="1744922135254" duration="126000" />
       <workItem from="1744922271655" duration="3079000" />
-      <workItem from="1744925866137" duration="3839000" />
+      <workItem from="1744925866137" duration="4894000" />
     </task>
     <task id="LOCAL-00001" summary="Fixed SSBOs for object positions saved in C++ for shader use.">
       <option name="closed" value="true" />
@@ -185,7 +187,23 @@
       <option name="project" value="LOCAL" />
       <updated>1744929722456</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Restructured logic from main.cpp into classes.">
+      <option name="closed" value="true" />
+      <created>1744929805076</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1744929805076</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Restructured logic from main.cpp into classes.">
+      <option name="closed" value="true" />
+      <created>1744929856812</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1744929856812</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

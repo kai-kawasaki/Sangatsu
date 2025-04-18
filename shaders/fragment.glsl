@@ -229,7 +229,7 @@ vec3 calcLight(Light lightSource, vec3 pos, vec3 normal, vec3 rDirRef, float amb
 
     float shadow = 1.0;
     if (light > 0.001) { // no need to calculate shadow if we're in the dark
-        shadow = calcSoftshadowV3(pos, lRay, 0.01, 3.0, lightSource.size);
+        shadow = calcSoftshadowV2(pos, lRay, 0.01, 3.0, lightSource.size);
     }
     vec3 dif = light*kDiffuse*iDiffuse*max(dot(lRay, normal), 0.)*shadow;
     vec3 spec = light*kSpecular*iSpecular*pow(max(dot(lRay, rDirRef), 0.), alpha_phong)*shadow;
@@ -311,9 +311,9 @@ vec3 render(vec3 rOrig, vec3 rDir) {
     // flashlight
     Light fLight;
     fLight.size = 0.0001;
-    fLight.pos = u_camPos;
+    fLight.pos = u_camPos + vec3(0, -0.7, 0);
     fLight.col = vec3(0.6431, 0.6118, 0.498);
-    fLight.dir = u_camPos + u_camTarget;
+    fLight.dir = fLight.pos + u_camTarget;
     fLight.focus = radians(15.0);
     fLight.spread = radians(30.0);
 
