@@ -55,7 +55,7 @@ Application::Application(int w, int h, const char* t) {
                   );
 
     _objects = {
-        Object(3, 0, 5),
+        Object(3, -0.5, 5),
         Object(3, 10,5),
         Object(5, 5, 5),
         Object(6, 5, 5)
