@@ -4,6 +4,6 @@
 
 #include "Object.h"
 
-Object::Object(float x, float y, float z) : x(x), y(y), z(z) {
+Object::Object(float x, float y, float z, float r, float g, float b) : x(x), y(y), z(z), r(r), g(g), b(b) {
     // Constructor implementation
 }

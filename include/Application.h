@@ -28,6 +28,7 @@ private:
     // void init();
     void loop();
     void cleanup();
+    bool isVisible(const glm::vec3 &objPos);
 
     std::unique_ptr<Window>      _window;
     std::unique_ptr<Shader>      _shader;
@@ -49,6 +50,7 @@ private:
     glm::vec3 _forward = {0.0f, 0.0f, 1.0f};
     glm::vec3 _forwardXZ = {0.0f, 0.0f, 1.0f};
     glm::vec3 _right     = { 0.0f, 1.0f, 0.0f };
+    glm::vec3 _up        = { 0.0f, 1.0f, 0.0f };
 
     bool    _camOriented = false;
     float   _sensitivity = 0.5f;

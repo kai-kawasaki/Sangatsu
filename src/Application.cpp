@@ -13,8 +13,14 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+#include <cmath>
 #include <iostream>
+#include <vector>
 
+// max distance your ray-march can travel
+static constexpr float kMaxTraceDistance = 100.0f;
 
 Application::Application(int w, int h, const char* t) {
     // 1) Create window & make its context current
@@ -26,8 +32,7 @@ Application::Application(int w, int h, const char* t) {
         std::exit(EXIT_FAILURE);
     }
 
-//If you want to use OpenGL debug output, Upgrade OpenGL Version to 4.3
-    // // 3) GL debug callback (optional)
+    // 3) (optional) Debug callback
     // if (glDebugMessageCallback) {
     //     glEnable(GL_DEBUG_OUTPUT);
     //     glDebugMessageCallback(
@@ -40,12 +45,12 @@ Application::Application(int w, int h, const char* t) {
     //     std::cerr << "[WARN] Debug callback not supported on this context\n";
     // }
 
-    // 4) Camera & input (we still use InputManager for mouse/scroll)
+    // 4) Camera & input
     _camera = std::make_unique<Camera>();
     InputManager::init(_window->handle(), _camera.get());
     glfwSetInputMode(_window->handle(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    // 5) Load shaders, textures, SSBO, ray‑marcher
+    // 5) Load shaders, textures, SSBO, ray-marcher
     _shader = std::make_unique<Shader>(
         (std::string(SHADERS_DIR) + "/vertex.glsl").c_str(),
         (std::string(SHADERS_DIR) + "/fragment.glsl").c_str()
@@ -54,20 +59,27 @@ Application::Application(int w, int h, const char* t) {
         std::string(TEXTURES_DIR) + "/test.png"
     );
 
+    // initial voxel list
     _objects = {
-        Object(3, -0.5, 5),
-        Object(3, 10,5),
-        Object(5, 5, 5),
-        Object(6, 5, 5)
+        Object(4, 1, 3, 1, 0, 0),
+        Object(7, 10, 8, 0, 1, 0),
+        Object(5, 5, 6, 0, 0, 1),
+        Object(6, 5, 5, 1, 1, 0),
     };
+    for (int i = -8; i < 8; i++) {
+        for (int j = -8; j < 8; j++) {
+            _objects.push_back(Object(i, 0, j, 1, 1, 1));
+        }
+    }
+
     _ssbo       = std::make_unique<SSBOManager>(_objects);
     _rayMarcher = std::make_unique<RayMarcher>(*_shader);
     _rayMarcher->init();
 
     // 6) Initialize camera position & time
-    _camPos    = glm::vec3(0.0f, 2.0f, -4.0f);
+    _camPos   = glm::vec3(0.0f, 2.0f, -4.0f);
     _camera->setPosition(_camPos);
-    _prevTime  = glfwGetTime();
+    _prevTime = glfwGetTime();
 }
 
 void Application::run() {
@@ -96,7 +108,7 @@ void Application::loop() {
         if (glfwGetKey(win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
             movement *= 2.0f;
 
-        // Free‑look mode if Alt
+        // Free-look mode if Alt
         _camOriented = (glfwGetKey(win, GLFW_KEY_LEFT_ALT) == GLFW_PRESS);
         if (_camOriented)
             movement /= 5.0f;
@@ -139,6 +151,49 @@ void Application::loop() {
         // Update camera
         _camera->setPosition(_camPos);
 
+        // ——— CPU culling (distance + frustum) ———
+        std::vector<Object> visible;
+        visible.reserve(_objects.size());
+
+        float zoom     = std::max(0.5f, _scrollOffset * 0.05f + 0.5f);
+        float halfVFOV = std::atan(0.5f / zoom);
+        float aspect   = float(w) / float(h);
+        float halfHFOV = std::atan((aspect * 0.5f) / zoom);
+
+        glm::vec3 camFwd   = _camera->forward();
+        glm::vec3 camRight = _camera->right();
+        glm::vec3 camUp    = _camera->up();
+
+        // assume all cubes are size = 1.0; half‐edge = 0.5
+        static constexpr float kHalfSize = 0.7f;
+        // bounding‐sphere radius = half‑diagonal = √3 * halfEdge
+        static constexpr float kRadius   = glm::sqrt(3.0f) * kHalfSize;
+
+        for (auto &obj : _objects) {
+            glm::vec3 toObj = glm::vec3(obj.x, obj.y, obj.z) - _camPos;
+
+            // project onto camera axes
+            float zc = glm::dot(toObj, camFwd);
+            float xc = glm::dot(toObj, camRight);
+            float yc = glm::dot(toObj, camUp);
+
+            // 1) distance cull, expanded by radius
+            if (zc + kRadius <= 0.0f || zc - kRadius > kMaxTraceDistance)
+                continue;
+
+            // 2) compute half‐angles once per frame
+            // (you already have halfHFOV, halfVFOV from before)
+
+            // 3) frustum planes cull, expanded by radius
+            float halfW = zc * std::tan(halfHFOV);
+            float halfH = zc * std::tan(halfVFOV);
+            if (xc >  halfW + kRadius || xc < -halfW - kRadius) continue;
+            if (yc >  halfH + kRadius || yc < -halfH - kRadius) continue;
+
+            visible.push_back(obj);
+        }
+        _ssbo->update(visible);
+
         // ——— Render ———
         _rayMarcher->render(
             static_cast<float>(w),
@@ -149,7 +204,8 @@ void Application::loop() {
             _camera->target(),
             flashlightOn,
             renderMode,
-            _texture->id()
+            _texture->id(),
+            visible.size()
         );
 
         glfwSwapBuffers(win);

@@ -22,7 +22,8 @@ public:
                 const glm::vec3& camTarget,
                 bool flashlightOn,
                 int renderMode,
-                GLuint textureID);
+                GLuint textureID,
+                int countBox = 0);
 
 private:
     Shader& _shader;

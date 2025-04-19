@@ -37,7 +37,8 @@ void RayMarcher::render(float w,float h,
                         const glm::vec3& camTarget,
                         bool flashlightOn,
                         int renderMode,
-                        GLuint texID)
+                        GLuint texID,
+                        int countBox)
 {
     _shader.use();
     glUniform2f(glGetUniformLocation(_shader.id(),"u_resolution"), w, h);
@@ -49,6 +50,7 @@ void RayMarcher::render(float w,float h,
                  1, glm::value_ptr(camTarget));
     glUniform1i(glGetUniformLocation(_shader.id(),"u_flashlight"), flashlightOn);
     glUniform1i(glGetUniformLocation(_shader.id(),"u_renderMode"), renderMode);
+    glUniform1i(glGetUniformLocation(_shader.id(),"u_countBox"), countBox);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texID);

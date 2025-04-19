@@ -47,6 +47,7 @@ void Camera::updateVectors() {
     };
     _forwardXZ = glm::normalize(glm::vec3(_forward.x, 0.0f, _forward.z));
     _right = glm::normalize(glm::cross(_forward,{0,1,0}));
+    _up = glm::normalize(glm::cross(_right, _forward));
     _position = _radius * glm::vec3{
         float(sin(_theta)*cos(_phi)),
         float(cos(_theta)),

@@ -24,13 +24,14 @@ public:
     [[nodiscard]] glm::vec3 forward()   const { return _forward; }
     [[nodiscard]] glm::vec3 forwardXZ() const { return _forwardXZ; }
     [[nodiscard]] glm::vec3 right()     const { return _right; }
+    [[nodiscard]] glm::vec3 up()        const { return _up; }
 
 private:
     double _theta, _phi;
     float _sensitivity;
     float _radius;
 
-    glm::vec3 _position, _target, _forward, _right, _forwardXZ;
+    glm::vec3 _position, _target, _forward, _right, _forwardXZ, _up;
     bool _firstMove;
     double _lastX, _lastY;
     void updateVectors();
