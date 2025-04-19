@@ -46,13 +46,13 @@ Application::Application(int w, int h, const char* t) {
     glfwSetInputMode(_window->handle(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // 5) Load shaders, textures, SSBO, ray‑marcher
-    _shader     = std::make_unique<Shader>(
-                      "../../shaders/vertex.glsl",
-                      "../../shaders/fragment.glsl"
-                  );
-    _texture    = std::make_unique<Texture>(
-                      "../../textures/test.png"
-                  );
+    _shader = std::make_unique<Shader>(
+        (std::string(SHADERS_DIR) + "/vertex.glsl").c_str(),
+        (std::string(SHADERS_DIR) + "/fragment.glsl").c_str()
+    );
+    _texture = std::make_unique<Texture>(
+        std::string(TEXTURES_DIR) + "/test.png"
+    );
 
     _objects = {
         Object(3, -0.5, 5),
