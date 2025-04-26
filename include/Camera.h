@@ -13,7 +13,8 @@ public:
     Camera();
 
     void processMouseMovement(double xpos, double ypos);
-    void processScroll(double yoffset);
+    void processScroll(float scrollOffset);
+    void processResize(int width, int height);
 
     [[nodiscard]] glm::vec3 position() const;
     [[nodiscard]] glm::vec3 target() const;
@@ -26,6 +27,11 @@ public:
     [[nodiscard]] glm::vec3 right()     const { return _right; }
     [[nodiscard]] glm::vec3 up()        const { return _up; }
 
+    [[nodiscard]] float zoom() const { return _zoom; }
+    [[nodiscard]] float halfVFOV() const { return _halfVFOV; }
+    [[nodiscard]] float halfHFOV() const { return _halfHFOV; }
+    [[nodiscard]] float aspect() const { return _aspect; }
+
 private:
     double _theta, _phi;
     float _sensitivity;
@@ -35,6 +41,11 @@ private:
     bool _firstMove;
     double _lastX, _lastY;
     void updateVectors();
+
+    float _zoom;
+    float _halfVFOV;
+    float _aspect;
+    float _halfHFOV;
 
 };
 

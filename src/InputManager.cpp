@@ -4,17 +4,24 @@
 
 #include "Globals.h"
 #include "InputManager.h"
+
+#include <Utilities.h>
+#include <glad/glad.h>
+
 #include "Camera.h"
 #include <GLFW/glfw3.h>
 
-static Camera* s_cam = nullptr;
+Camera* InputManager::s_cam = nullptr;
+float* InputManager::_scrollOffset = nullptr;
 
-void InputManager::init(GLFWwindow *window, Camera* cam) {
+void InputManager::init(GLFWwindow *window, Camera* cam, float* scrollOffset) {
     s_cam = cam;
+    _scrollOffset = scrollOffset;
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, cursorCallback);
     glfwSetScrollCallback(window, scrollCallback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 }
 
 void InputManager::key_callback(GLFWwindow *window,
@@ -67,8 +74,12 @@ void InputManager::scrollCallback(GLFWwindow *window,
                                   double xoffset,
                                   double yoffset)
 {
+    if (_scrollOffset) {
+        *_scrollOffset = clampf(*_scrollOffset + static_cast<float>(yoffset), 0.1f, 500.f);
+    }
+
     if (s_cam) {
-        s_cam->processScroll(yoffset);
+        s_cam->processScroll(*_scrollOffset);
     }
 }
 
@@ -85,3 +96,8 @@ void InputManager::mouse_button_callback(GLFWwindow *window,
         // e.g. in the future you might open a context menu
     }
 }
+
+void InputManager::framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+    glViewport(0, 0, width, height);
+}
+

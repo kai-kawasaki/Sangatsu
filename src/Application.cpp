@@ -47,7 +47,7 @@ Application::Application(int w, int h, const char* t) {
 
     // 4) Camera & input
     _camera = std::make_unique<Camera>();
-    InputManager::init(_window->handle(), _camera.get());
+    InputManager::init(_window->handle(), _camera.get(), &_scrollOffset);
     glfwSetInputMode(_window->handle(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // 5) Load shaders, textures, SSBO, ray-marcher
@@ -68,9 +68,11 @@ Application::Application(int w, int h, const char* t) {
     };
     for (int i = -8; i < 8; i++) {
         for (int j = -8; j < 8; j++) {
-            _objects.push_back(Object(i, 0, j, 1, 1, 1));
+            _objects.emplace_back(i, 0, j, 1, 1, 1);
         }
     }
+
+    _visibleObjects.reserve(_objects.size());
 
     _ssbo       = std::make_unique<SSBOManager>(_objects);
     _rayMarcher = std::make_unique<RayMarcher>(*_shader);
@@ -152,22 +154,19 @@ void Application::loop() {
         _camera->setPosition(_camPos);
 
         // ——— CPU culling (distance + frustum) ———
-        std::vector<Object> visible;
-        visible.reserve(_objects.size());
-
-        float zoom     = std::max(0.5f, _scrollOffset * 0.05f + 0.5f);
-        float halfVFOV = std::atan(0.5f / zoom);
-        float aspect   = float(w) / float(h);
-        float halfHFOV = std::atan((aspect * 0.5f) / zoom);
+        _visibleObjects.clear();
 
         glm::vec3 camFwd   = _camera->forward();
         glm::vec3 camRight = _camera->right();
         glm::vec3 camUp    = _camera->up();
 
         // assume all cubes are size = 1.0; half‐edge = 0.5
-        static constexpr float kHalfSize = 0.7f;
+        static constexpr float kHalfSize = 0.865f;
         // bounding‐sphere radius = half‑diagonal = √3 * halfEdge
         static constexpr float kRadius   = glm::sqrt(3.0f) * kHalfSize;
+
+        float tanHFOV = std::tan(_camera->halfHFOV());
+        float tanVFOV = std::tan(_camera->halfVFOV());
 
         for (auto &obj : _objects) {
             glm::vec3 toObj = glm::vec3(obj.x, obj.y, obj.z) - _camPos;
@@ -185,14 +184,14 @@ void Application::loop() {
             // (you already have halfHFOV, halfVFOV from before)
 
             // 3) frustum planes cull, expanded by radius
-            float halfW = zc * std::tan(halfHFOV);
-            float halfH = zc * std::tan(halfVFOV);
+            float halfW = zc * tanHFOV;
+            float halfH = zc * tanVFOV;
             if (xc >  halfW + kRadius || xc < -halfW - kRadius) continue;
             if (yc >  halfH + kRadius || yc < -halfH - kRadius) continue;
 
-            visible.push_back(obj);
+            _visibleObjects.push_back(obj);
         }
-        _ssbo->update(visible);
+        _ssbo->update(_visibleObjects);
 
         // ——— Render ———
         _rayMarcher->render(
@@ -205,7 +204,7 @@ void Application::loop() {
             flashlightOn,
             renderMode,
             _texture->id(),
-            visible.size()
+            _visibleObjects.size()
         );
 
         glfwSwapBuffers(win);
@@ -215,4 +214,9 @@ void Application::loop() {
 
 void Application::cleanup() {
     // unique_ptrs clean up automatically
+}
+
+void Application::setScrollOffset(float offset) {
+    _scrollOffset = offset;
+
 }

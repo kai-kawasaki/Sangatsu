@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "Utilities.h"
 #include <cmath>
+#include "Globals.h"
 
 Camera::Camera() : _theta(45.0*PI/180.0),
                    _phi(30.0*PI/180.0),
@@ -12,7 +13,12 @@ Camera::Camera() : _theta(45.0*PI/180.0),
                    _radius(100.0f),
                    _firstMove(true),
                    _lastX(0.0),
-                   _lastY(0.0) {
+                   _lastY(0.0),
+                   _zoom(0.5f),
+                   _halfVFOV(std::atan(1)),
+                   _aspect(widthG/heightG),
+                   _halfHFOV(std::atan((_aspect * 0.5f) / _zoom))
+{
     updateVectors();
 }
 
@@ -34,9 +40,18 @@ void Camera::processMouseMovement(double xpos, double ypos) {
     updateVectors();
 }
 
-void Camera::processScroll(double yoffset) {
-    _radius = clampf(_radius - static_cast<float>(yoffset), 0.1f, 500.f);
+void Camera::processScroll(float scrollOffset) {
+    _radius = scrollOffset;
+    _zoom = std::max(0.5f, scrollOffset * 0.05f + 0.5f);
+    _halfVFOV = std::atan(0.5f / _zoom);
     updateVectors();
+}
+
+void Camera::processResize(int width, int height) {
+    widthG = width;
+    heightG = height;
+    _aspect = float(width) / float(height);
+    _halfHFOV = std::atan((_aspect * 0.5f) / _zoom);
 }
 
 void Camera::updateVectors() {

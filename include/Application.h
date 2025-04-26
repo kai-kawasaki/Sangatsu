@@ -23,6 +23,7 @@ class Application {
 public:
     Application(int w,int h,const char* title);
     void run();
+    void setScrollOffset(float offset);
 
 private:
     // void init();
@@ -38,6 +39,8 @@ private:
     std::unique_ptr<RayMarcher>  _rayMarcher;
 
     std::vector<Object> _objects;
+    std::vector<Object> _visibleObjects;
+
     float  _scrollOffset = 0.f;
     bool   _flashlightOn = false;
     int    _renderMode   = 1;
