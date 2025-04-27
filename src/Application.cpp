@@ -18,9 +18,17 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <execution>
+#include <mutex>
+#include <numeric>
+#include <algorithm>
+#include <thread>
 
-// max distance your ray-march can travel
-static constexpr float kMaxTraceDistance = 100.0f;
+static constexpr float kMaxTraceDistance   = 100.0f;
+static constexpr float kHalfSize           = 0.865f;
+static constexpr float kRadius             = glm::sqrt(3.0f) * kHalfSize;
+// static constexpr float kCullAngleMarginDeg = 2.0f;
+// static constexpr float kCullAngleMargin   = glm::radians(kCullAngleMarginDeg);
 
 Application::Application(int w, int h, const char* t) {
     // 1) Create window & make its context current
@@ -32,18 +40,39 @@ Application::Application(int w, int h, const char* t) {
         std::exit(EXIT_FAILURE);
     }
 
-    // 3) (optional) Debug callback
-    // if (glDebugMessageCallback) {
-    //     glEnable(GL_DEBUG_OUTPUT);
-    //     glDebugMessageCallback(
-    //         [](GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar* msg, const void*) {
-    //             std::cerr << "[GL DEBUG] " << msg << "\n";
-    //         },
-    //         nullptr
-    //     );
-    // } else {
-    //     std::cerr << "[WARN] Debug callback not supported on this context\n";
-    // }
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+
+    glDebugMessageControl(
+        GL_DONT_CARE,             // source
+        GL_DONT_CARE,             // type
+        GL_DEBUG_SEVERITY_NOTIFICATION, // severity to disable
+        0, nullptr,
+        GL_FALSE
+    );
+
+
+    glDebugMessageCallback(
+      [](GLenum source,
+         GLenum type,
+         GLuint id,
+         GLenum severity,
+         GLsizei length,
+         const GLchar* msg,
+         const void*)
+      {
+        std::cerr
+          << "[GL ERROR] "
+          << msg
+          << " (source=" << source
+          << ", type="   << type
+          << ", id="     << id
+          << ", sev="    << severity
+          << ")\n";
+      },
+      nullptr
+    );
+
 
     // 4) Camera & input
     _camera = std::make_unique<Camera>();
@@ -61,22 +90,25 @@ Application::Application(int w, int h, const char* t) {
 
     // initial voxel list
     _objects = {
-        Object(4, 1, 3, 1, 0, 0),
-        Object(7, 10, 8, 0, 1, 0),
-        Object(5, 5, 6, 0, 0, 1),
-        Object(6, 5, 5, 1, 1, 0),
+        Object({4, 1, 3}, {1, 0, 0}),
+        Object({0, 10, 0}, {0, 1, 0}),
+        Object({5, 5, 6}, {0, 0, 1}),
+        Object({6, 5, 5}, {1, 1, 0}),
     };
     for (int i = -8; i < 8; i++) {
         for (int j = -8; j < 8; j++) {
-            _objects.emplace_back(i, 0, j, 1, 1, 1);
+            _objects.emplace_back(Object({i, 0, j}, {1, 1, 1}));
         }
     }
-
-    _visibleObjects.reserve(_objects.size());
 
     _ssbo       = std::make_unique<SSBOManager>(_objects);
     _rayMarcher = std::make_unique<RayMarcher>(*_shader);
     _rayMarcher->init();
+
+    // ——— Disable culling: render all objects ———
+    _visibleIndices.resize(_objects.size());
+    std::iota(_visibleIndices.begin(), _visibleIndices.end(), 0);
+    _ssbo->updateIndices(_visibleIndices, _frameIndex);
 
     // 6) Initialize camera position & time
     _camPos   = glm::vec3(0.0f, 2.0f, -4.0f);
@@ -153,23 +185,74 @@ void Application::loop() {
         // Update camera
         _camera->setPosition(_camPos);
 
+        // // compute once per frame
+        // // const float tanHFOV = std::tan(_camera->halfHFOV());
+        // // const float tanVFOV = std::tan(_camera->halfVFOV());
+        // float halfHFOVm = _camera->halfHFOV() + kCullAngleMargin;
+        // float halfVFOVm = _camera->halfVFOV() + kCullAngleMargin;
+        // const float tanHFOVm = std::tan(halfHFOVm);
+        // const float tanVFOVm = std::tan(halfVFOVm);
+        //
+        // // ——— Parallel CPU culling into index list ———
+        // _visibleIndices.clear();
+        // const std::size_t objCount = _objects.size();
+        // std::mutex idxMutex;
+        //
+        // // Build index list 0..objCount-1
+        // std::vector<std::size_t> allIdx(objCount);
+        // std::iota(allIdx.begin(), allIdx.end(), 0);
+        //
+        // auto cullTask = [&](std::size_t i) {
+        //     const Object& obj = _objects[i];
+        //     glm::vec3 toObj = glm::vec3(obj.x, obj.y, obj.z) - _camPos;
+        //
+        //     float zc = glm::dot(toObj, _camera->forward());
+        //     if (zc + kRadius <= 0.0f || zc - kRadius > kMaxTraceDistance) return;
+        //
+        //     float xc = glm::dot(toObj, _camera->right());
+        //     float yc = glm::dot(toObj, _camera->up());
+        //     float halfW = zc * tanHFOVm;
+        //     float halfH = zc * tanVFOVm;
+        //     if (xc >  halfW + kRadius || xc < -halfW - kRadius) return;
+        //     if (yc >  halfH + kRadius || yc < -halfH - kRadius) return;
+        //
+        //     std::lock_guard<std::mutex> lock(idxMutex);
+        //     _visibleIndices.push_back(i);
+        // };
+        //
+        // // Run culling in parallel over real iterators
+        // std::for_each(
+        //     std::execution::par,
+        //     allIdx.begin(),
+        //     allIdx.end(),
+        //     cullTask
+        // );
+        //
+        // // Update SSBO with only the visible subset
+        // _ssbo->updateIndices(_visibleIndices);
+
         // ——— CPU culling (distance + frustum) ———
-        _visibleObjects.clear();
+        _frameIndex = (_frameIndex + 1) % FRAMES_IN_FLIGHT;
+        _visibleIndices.clear();
 
         glm::vec3 camFwd   = _camera->forward();
         glm::vec3 camRight = _camera->right();
         glm::vec3 camUp    = _camera->up();
 
-        // assume all cubes are size = 1.0; half‐edge = 0.5
-        static constexpr float kHalfSize = 0.865f;
-        // bounding‐sphere radius = half‑diagonal = √3 * halfEdge
-        static constexpr float kRadius   = glm::sqrt(3.0f) * kHalfSize;
+        // // assume all cubes are size = 1.0; half‐edge = 0.5
+        // static constexpr float kHalfSize = 0.865f;
+        // // bounding‐sphere radius = half‑diagonal = √3 * halfEdge
+        // static constexpr float kRadius   = glm::sqrt(3.0f) * kHalfSize;
 
         float tanHFOV = std::tan(_camera->halfHFOV());
         float tanVFOV = std::tan(_camera->halfVFOV());
 
-        for (auto &obj : _objects) {
-            glm::vec3 toObj = glm::vec3(obj.x, obj.y, obj.z) - _camPos;
+        struct DepthIdx { float depth; size_t idx; };
+        std::vector<DepthIdx> tmp;
+
+        for (size_t i = 0; i < _objects.size(); i++) {
+            const auto& obj = _objects[i];
+            glm::vec3 toObj = obj.position - _camPos;
 
             // project onto camera axes
             float zc = glm::dot(toObj, camFwd);
@@ -189,9 +272,20 @@ void Application::loop() {
             if (xc >  halfW + kRadius || xc < -halfW - kRadius) continue;
             if (yc >  halfH + kRadius || yc < -halfH - kRadius) continue;
 
-            _visibleObjects.push_back(obj);
+            // _visibleIndices.push_back(i);
+            tmp.push_back({ zc, i });
         }
-        _ssbo->update(_visibleObjects);
+
+        std::sort(tmp.begin(), tmp.end(), [](auto& a, auto& b) {return a.depth < b.depth;});
+
+        _visibleIndices.resize(tmp.size());
+        for (size_t i = 0; i < tmp.size(); i++) {
+            _visibleIndices[i] = tmp[i].idx;
+        }
+
+        _ssbo->updateIndices(_visibleIndices, _frameIndex);
+
+
 
         // ——— Render ———
         _rayMarcher->render(
@@ -204,7 +298,7 @@ void Application::loop() {
             flashlightOn,
             renderMode,
             _texture->id(),
-            _visibleObjects.size()
+            _visibleIndices.size()
         );
 
         glfwSwapBuffers(win);

@@ -10,15 +10,32 @@
 #include <glad/glad.h>
 #include "Object.h"
 
+// class SSBOManager {
+// public:
+//     explicit SSBOManager(const std::vector<Object>& allObjects);
+//     ~SSBOManager();
+//
+//     void update(const std::vector<Object>& data) const;
+//     void updateIndices(const std::vector<std::size_t>& indices) const;
+//
+// private:
+//     GLuint _ssbo{};
+//     Object* _mappedPtr;
+//     std::vector<Object> _allObjects;
+// };
+
 class SSBOManager {
 public:
-    explicit SSBOManager(const std::vector<Object>& data);
+    SSBOManager(const std::vector<Object>& allObjects);
     ~SSBOManager();
-
-    void update(const std::vector<Object>& data) const;
-
+    void updateIndices(const std::vector<size_t>& indices, int frame) const;
 private:
-    GLuint _ssbo{};
+    std::vector<GLuint>      _ssbos;
+    std::vector<Object*>     _mappedPtrs;
+    size_t                   _maxObjects;
+    std::vector<Object>      _allObjects;
+    GLuint                   _fullSSBO;
 };
+
 
 #endif //SSBOMANAGER_H

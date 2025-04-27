@@ -4,6 +4,6 @@
 
 #include "Object.h"
 
-Object::Object(float x, float y, float z, float r, float g, float b) : x(x), y(y), z(z), r(r), g(g), b(b) {
+Object::Object(const glm::vec3 position, const glm::vec3 color) : position(position), color(color) {
     // Constructor implementation
 }

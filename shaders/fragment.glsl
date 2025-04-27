@@ -5,18 +5,18 @@ in vec3 color;
 layout (location = 0) out vec4 FragColor;
 
 struct object {
-    float x;
-    float y;
-    float z;
-    float r;
-    float g;
-    float b;
+    float x, y, z;
+    float r, g, b;
 };
 
 // triPlanar(programTexture1, p, normal, size);
 
-layout (std430, binding = 0) buffer boxes {
-    object box_positions[];
+layout (std430, binding = 0) buffer VisibleObjects {
+    object visibleObjects[];
+};
+
+layout (std430, binding = 1) buffer AllObjects {
+    object allObjects[];
 };
 
 
@@ -63,16 +63,24 @@ vec2 minID(vec2 res1, vec2 res2) {
     return (res1.x < res2.x) ? res1 : res2;
 }
 
-vec2 calcSDF(vec3 pos) {
+vec2 calcSDF(vec3 pos, bool cull) {
 
 //    vec2 plane = ;
 //    vec2 dist = vec2(fPlane(pos, vec3(0.0, 1.0, 0.0), 1.0), -1.0);
     vec2 dist = vec2(MAX_DIST_TO_TRAVEL, -1.0);
 
-    for (int i = 0; i < box_positions.length(); i++) {
-        vec3 location = vec3(box_positions[i].x, box_positions[i].y, box_positions[i].z);
-        dist = minID(vec2(fBox(pos-location, vec3(0.5)), float(i)), dist);
+    if (cull) {
+        for (int i = 0; i < u_countBox; i++) {
+            vec3 location = vec3(visibleObjects[i].x, visibleObjects[i].y, visibleObjects[i].z);
+            dist = minID(vec2(fBox(pos-location, vec3(0.5)), float(i)), dist);
+        }
+    } else {
+        for (int i = 0; i < allObjects.length(); i++) {
+            vec3 location = vec3(allObjects[i].x, allObjects[i].y, allObjects[i].z);
+            dist = minID(vec2(fBox(pos-location, vec3(0.5)), float(i)), dist);
+        }
     }
+
 
     return dist;
 }
@@ -86,7 +94,7 @@ float calcAO(vec3 pos, vec3 normal) { //Ambient occlusion
         float hrconst = 0.03; // larger values = AO
         float hr = hrconst + 0.15*float(i)/4.0;
         vec3 aopos =  normal * hr + pos;
-        float dd = calcSDF( aopos ).x;
+        float dd = calcSDF( aopos , true).x;
         occ += (hr-dd)*sca;
         sca *= 0.95;
     }
@@ -102,7 +110,7 @@ float calcSoftshadow(in vec3 ro, in vec3 rd, float mint, float maxt, float w) {
     float t = mint;
     for( int i=0; i<256 && t<maxt; i++ )
     {
-        float h = calcSDF(ro + rd*t).x;
+        float h = calcSDF(ro + rd*t, false).x;
         if( h<0.001 )
             return 0.0;
         //float y = h*h/(2.0*ph);
@@ -117,13 +125,13 @@ float calcSoftshadow(in vec3 ro, in vec3 rd, float mint, float maxt, float w) {
 
 
 vec4 getNormal(vec3 pos) {
-    vec2 dist = calcSDF(pos);
+    vec2 dist = calcSDF(pos, true);
     vec2 e = vec2(EPSILON, 0.0);
 
     vec3 normal = dist.x - vec3(
-        calcSDF(pos-e.xyy).x,
-        calcSDF(pos-e.yxy).x,
-        calcSDF(pos-e.yyx).x);
+        calcSDF(pos-e.xyy, true).x,
+        calcSDF(pos-e.yxy, true).x,
+        calcSDF(pos-e.yyx, true).x);
 
     return vec4(normalize(normal), dist.y);
 }
@@ -134,7 +142,7 @@ float rMarch(vec3 rOrig, vec3 rDir) {
 
     for(int i=0; i<MAX_STEPS; i++) {
         vec3 rPos = rOrig + rDir * dOrig;
-        float dSurf = calcSDF(rPos).x;
+        float dSurf = calcSDF(rPos, true).x;
         dOrig += dSurf;
         if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF*clamp(((dOrig*dOrig-3)*LOD_MULTIPLIER),1,MAX_DIST_TO_TRAVEL*MAX_DIST_TO_TRAVEL*LOD_MULTIPLIER)) break;
         //if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF) break;
@@ -152,7 +160,9 @@ vec3 getLight(vec3 p, vec3 rd, float id) {
 
     // Fetch the object's color based on its ID
     int objID = int(id);
-    vec3 color = vec3(box_positions[objID].r, box_positions[objID].g, box_positions[objID].b);
+    vec3 color = vec3(visibleObjects[objID].r, visibleObjects[objID].g, visibleObjects[objID].b);
+//    vec3 color = vec3(objID/100.0f, 0, 0);
+
 
     vec3 specColor = vec3(0.6, 0.5, 0.4);
     vec3 specular = 1.3 * specColor * pow(clamp(dot(R, V), 0.0, 1.0), 10.0);
@@ -327,6 +337,7 @@ void main() {
 
     // — compute digit IDs
     int count = u_countBox;
+//    int count = visibleObjects.length();
     int d0 = count % 10;
     int d1 = (count / 10) % 10;
     int d2 = (count / 100) % 10;

@@ -19,8 +19,11 @@ void RayMarcher::init() {
     glBindBuffer(GL_ARRAY_BUFFER,_vbo);
     glBufferData(GL_ARRAY_BUFFER,sizeof(_quad),_quad,GL_STATIC_DRAW);
 
-    auto posLoc = glGetAttribLocation(_shader.id(),"in_position");
-    auto colLoc = glGetAttribLocation(_shader.id(),"vCol");
+    // auto posLoc = glGetAttribLocation(_shader.id(),"in_position");
+    // auto colLoc = glGetAttribLocation(_shader.id(),"vCol");
+    auto posLoc = 0;
+    auto colLoc = 1;
+
     glEnableVertexAttribArray(posLoc);
     glVertexAttribPointer(posLoc,3,GL_FLOAT,GL_FALSE,
                           sizeof(Vertex),(void*)offsetof(Vertex,position));

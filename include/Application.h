@@ -39,7 +39,7 @@ private:
     std::unique_ptr<RayMarcher>  _rayMarcher;
 
     std::vector<Object> _objects;
-    std::vector<Object> _visibleObjects;
+    std::vector<std::size_t> _visibleIndices;
 
     float  _scrollOffset = 0.f;
     bool   _flashlightOn = false;
@@ -57,6 +57,7 @@ private:
 
     bool    _camOriented = false;
     float   _sensitivity = 0.5f;
+    int _frameIndex = 0;
 };
 
 

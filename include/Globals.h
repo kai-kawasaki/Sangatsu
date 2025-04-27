@@ -9,6 +9,6 @@
 extern bool flashlightOn;
 extern int  renderMode;
 extern float widthG, heightG;
-
+extern const int FRAMES_IN_FLIGHT;
 
 #endif //GLOBALS_H
