@@ -30,34 +30,17 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Upgraded to OpenGL 4.4">
+    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Persistent mapping, lighting consistent culling, and frames in flight.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/RayMarcher.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/RayMarcher.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Window.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Window.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/fragment.glsl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/vertex.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/vertex.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/include/Application.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/Application.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/include/Globals.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/Globals.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/include/Object.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/Object.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/include/SSBOManager.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/SSBOManager.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/fragment.glsl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shaders/vertex.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/vertex.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Application.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Application.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Globals.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Globals.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Object.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/RayMarcher.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/RayMarcher.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/SSBOManager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/SSBOManager.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Window.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Window.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -188,7 +171,7 @@
       <workItem from="1745010194654" duration="230000" />
       <workItem from="1745010531179" duration="28000" />
       <workItem from="1745010632687" duration="3208000" />
-      <workItem from="1745645552190" duration="26087000" />
+      <workItem from="1745645552190" duration="27435000" />
     </task>
     <task id="LOCAL-00001" summary="Fixed SSBOs for object positions saved in C++ for shader use.">
       <option name="closed" value="true" />
@@ -246,7 +229,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745660804438</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Persistent mapping, lighting consistent culling, and frames in flight.">
+      <option name="closed" value="true" />
+      <created>1745791415352</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1745791415352</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -275,6 +266,7 @@
     <MESSAGE value="Update CMakeLists.txt to create portable executable." />
     <MESSAGE value="Small optimizations." />
     <MESSAGE value="Upgraded to OpenGL 4.4" />
-    <option name="LAST_COMMIT_MESSAGE" value="Upgraded to OpenGL 4.4" />
+    <MESSAGE value="Persistent mapping, lighting consistent culling, and frames in flight." />
+    <option name="LAST_COMMIT_MESSAGE" value="Persistent mapping, lighting consistent culling, and frames in flight." />
   </component>
 </project>
