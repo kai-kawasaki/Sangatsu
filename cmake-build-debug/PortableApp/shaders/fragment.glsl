@@ -13,6 +13,7 @@ struct Object {
     float blendRadius;
     int groupLength;
     int materialID;
+    float textureScale;
 };
 
 layout (std430, binding = 0) buffer VisibleObjects {
@@ -35,7 +36,7 @@ uniform int u_flashlight;
 uniform int u_renderMode;
 uniform int u_countObjects;
 
-uniform sampler2D programTexture1;
+uniform sampler2DArray textureArray;
 
 const float MAX_STEPS = 500.0;
 const float MIN_DIST_TO_SDF = 0.001;
@@ -61,6 +62,37 @@ vec3 triPlanar(sampler2D tex, vec3 p, vec3 normal, float size) {
     return (texture(tex, p.xy * 0.5 + 0.5) * normal.z +
     texture(tex, p.xz * 0.5 + 0.5) * normal.y +
     texture(tex, p.yz * 0.5 + 0.5) * normal.x).rgb;
+}
+
+vec3 triPlanarArray(
+sampler2DArray texArr,
+vec3           p,
+vec3           normal,
+float          size,
+float          layer    // which array slice to sample
+) {
+    // 1) scale into “texture space”
+    vec3 pp = p * (1.0 / size);
+
+    // 2) compute blend weights from the normal
+    vec3 w = abs(normal);
+    w = pow(w, vec3(5.0));
+    w /= (w.x + w.y + w.z);
+
+    // 3) build each projection’s UV + layer
+    vec3 uvXY = vec3(pp.xy * 0.5 + 0.5, layer);
+    vec3 uvXZ = vec3(pp.xz * 0.5 + 0.5, layer);
+    vec3 uvYZ = vec3(pp.yz * 0.5 + 0.5, layer);
+
+    // 4) sample from the array slice
+    vec3 cXY = texture(texArr, uvXY).rgb;
+    vec3 cXZ = texture(texArr, uvXZ).rgb;
+    vec3 cYZ = texture(texArr, uvYZ).rgb;
+
+    // 5) blend by the weights
+    return cXY * w.z
+    + cXZ * w.y
+    + cYZ * w.x;
 }
 
 vec2 minID(vec2 res1, vec2 res2) {
@@ -107,34 +139,6 @@ float getObject(Object object, vec3 pos) {
 ////            dist = minID(vec2(getObject(allObjects[i], pos), float(i)), dist);
 ////        }
 ////    }
-//
-//    int operation = visibleObjects[0].operation;
-//    vec2 operationDist = vec2(MAX_DIST_TO_TRAVEL, -1.0);
-//
-//    if (cull) {
-//        int i = 0;
-//        while (i < u_countObjects) {
-//            while (visibleObjects[i].operation == operation && i < u_countObjects) {
-//                switch (operation) {
-//                    case 0:
-//                        operationDist = minID(vec2(getObject(visibleObjects[i], pos), float(i)), operationDist);
-//                        break;
-//                    case 1:
-//                        operationDist = minID(vec2(opSmoothUnion(getObject(visibleObjects[i], pos), operationDist.x, visibleObjects[i].blendRadius), float(i)), operationDist);
-//                        break;
-//                }
-//                i++;
-//            }
-//            operation = visibleObjects[i].operation;
-//            dist = minID(operationDist, dist);
-//            operationDist = vec2(MAX_DIST_TO_TRAVEL, -1.0);
-//            i++;
-//        }
-//    } else {
-//        for (int i = 0; i < allObjects.length(); i++) {
-//            dist = minID(vec2(getObject(allObjects[i], pos), float(i)), dist);
-//        }
-//    }
 //
 //    return dist;
 //}
@@ -346,14 +350,14 @@ float rMarch(vec3 rOrig, vec3 rDir) {
     return dOrig;
 }
 
-vec3 getMaterial(vec3 p, float id, vec3 normal, float size) {
-    switch (visibleObjects[int(id)].materialID) {
-        case 0:
-            return vec3(visibleObjects[int(id)].r, visibleObjects[int(id)].g, visibleObjects[int(id)].b);
-        case 1:
-            return triPlanar(programTexture1, p, normal, size);
+vec3 getMaterial(vec3 p, float id, vec3 normal) {
+    Object object = visibleObjects[int(id)];
+
+    if (object.materialID == -1) {
+        return vec3(object.r, object.g, object.b);
     }
-    return vec3(0.0);
+
+    return triPlanarArray(textureArray, p, normal, object.textureScale, object.materialID);
 }
 
 vec3 getLight(vec3 p, vec3 rd, float id) {
@@ -365,7 +369,7 @@ vec3 getLight(vec3 p, vec3 rd, float id) {
 
     // Fetch the object's color based on its ID
     int objID = int(id);
-    vec3 color = getMaterial(p, N.w, N.xyz, 0.5);
+    vec3 color = getMaterial(p, N.w, N.xyz);
 
     vec3 specColor = vec3(0.6, 0.5, 0.4);
     vec3 specular = 1.3 * specColor * pow(clamp(dot(R, V), 0.0, 1.0), 10.0);

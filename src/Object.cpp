@@ -4,7 +4,7 @@
 
 #include "Object.h"
 
-Object::Object(const glm::vec3 position, const glm::vec3 scale, const int objectType, const glm::vec3 color, const int operation, const float blendRadius, const int groupLength, const int materialID)
+Object::Object(const glm::vec3 position, const glm::vec3 scale, const int objectType, const glm::vec3 color, const int operation, const float blendRadius, const int groupLength)
     : position(position)
     , color(color)
     , scale(scale)
@@ -12,12 +12,13 @@ Object::Object(const glm::vec3 position, const glm::vec3 scale, const int object
     , operation(operation)
     , blendRadius(blendRadius)
     , groupLength(groupLength)
-    , materialID(materialID)
+    , materialID(-1)
+    , textureScale(0.0f)
 {
     // Constructor implementation
 }
 
-Object::Object(const glm::vec3 position, const glm::vec3 scale, const int objectType, const int materialID, const int operation, const float blendRadius, const int groupLength)
+Object::Object(const glm::vec3 position, const glm::vec3 scale, const int objectType, const int materialID, const float textureScale, const int operation, const float blendRadius, const int groupLength)
     : position(position)
     , color(glm::vec3(0))
     , scale(scale)
@@ -26,6 +27,7 @@ Object::Object(const glm::vec3 position, const glm::vec3 scale, const int object
     , blendRadius(blendRadius)
     , groupLength(groupLength)
     , materialID(materialID)
+    , textureScale(textureScale)
 {
 
 }

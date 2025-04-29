@@ -23,7 +23,6 @@ class Application {
 public:
     Application(int w,int h,const char* title);
     void run();
-    void setScrollOffset(float offset);
 
 private:
     // void init();

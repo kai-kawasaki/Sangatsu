@@ -81,13 +81,22 @@ Application::Application(int w, int h, const char* t) {
         (std::string(SHADERS_DIR) + "/vertex.glsl").c_str(),
         (std::string(SHADERS_DIR) + "/fragment.glsl").c_str()
     );
-    _texture = std::make_unique<Texture>(
-        std::string(TEXTURES_DIR) + "/test.png"
-    );
+
+    std::vector layers = {
+        std::string(TEXTURES_DIR) + "/test.png",
+        std::string(TEXTURES_DIR) + "/log.png"
+    };
+    _texture = std::make_unique<Texture>(layers);
+    _texture->bind(0);
+
+    // _texture = std::make_unique<Texture>(
+    //     std::string(TEXTURES_DIR) + "/test.png"
+    // );
 
     // initial voxel list
     _objects = {
-        Object({4, 1, 3}, glm::vec3(0.5f), 0, 1),
+        Object({4, 1, 3}, glm::vec3(0.5f), 0, 0, 0.5),
+        Object({4, 1, 5}, glm::vec3(0.5f), 0, 1, 0.5),
         Object({0, 10, 0}, glm::vec3(0.5f), 10, {0, 1, 0}),
         Object({5, 5, 6}, glm::vec3(0.5f), 0, {0, 0, 1}),
         Object({6, 5, 5}, glm::vec3(0.5f), 0, {1, 1, 0}),
@@ -231,7 +240,7 @@ void Application::loop() {
             _camera->target(),
             flashlightOn,
             renderMode,
-            _texture->id(),
+            0,
             _visibleIndices.size()
         );
 
@@ -242,9 +251,4 @@ void Application::loop() {
 
 void Application::cleanup() {
     // unique_ptrs clean up automatically
-}
-
-void Application::setScrollOffset(float offset) {
-    _scrollOffset = offset;
-
 }
