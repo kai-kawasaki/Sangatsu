@@ -13,6 +13,9 @@ struct Object {
     float blendRadius;
     int groupLength;
     int materialID;
+    int textureXY;
+    int textureXZ;
+    int textureYZ;
     float textureScale;
 };
 
@@ -69,31 +72,51 @@ sampler2DArray texArr,
 vec3           p,
 vec3           normal,
 float          size,
-float          layer    // which array slice to sample
+vec3           layer    // three slice indices
 ) {
-    // 1) scale into “texture space”
     vec3 pp = p * (1.0 / size);
-
-    // 2) compute blend weights from the normal
-    vec3 w = abs(normal);
+    vec3 w  = abs(normal);
     w = pow(w, vec3(5.0));
     w /= (w.x + w.y + w.z);
 
-    // 3) build each projection’s UV + layer
-    vec3 uvXY = vec3(pp.xy * 0.5 + 0.5, layer);
-    vec3 uvXZ = vec3(pp.xz * 0.5 + 0.5, layer);
-    vec3 uvYZ = vec3(pp.yz * 0.5 + 0.5, layer);
+//     build each projection’s UV + its own layer
+//    vec3 uvXY = vec3(pp.xy * 0.5 + 0.5, layer.x);
+//    vec3 uvXZ = vec3(pp.xz * 0.5 + 0.5, layer.y);
+//    vec3 uvYZ = vec3(pp.yz * 0.5 + 0.5, layer.z);
+//
+//    vec3 cXY = texture(texArr, uvXY).rgb;
+//    vec3 cXZ = texture(texArr, uvXZ).rgb;
+//    vec3 cYZ = texture(texArr, uvYZ).rgb;
 
-    // 4) sample from the array slice
-    vec3 cXY = texture(texArr, uvXY).rgb;
-    vec3 cXZ = texture(texArr, uvXZ).rgb;
-    vec3 cYZ = texture(texArr, uvYZ).rgb;
+    // --- XY plane (+Z/–Z faces) ---
+    vec2 uvXY = pp.xy * 0.5 + 0.5;
+    if (normal.z < 0.0) {
+        uvXY.x = 1.0 - uvXY.x;
+    }
+    uvXY.y = 1.0 - uvXY.y;
 
-    // 5) blend by the weights
+    // --- XZ plane (+Y/–Y faces) ---
+    vec2 uvXZ = vec2(pp.x, pp.z) * 0.5 + 0.5;
+    if (normal.y > 0.0) {
+        uvXZ.x = 1.0 - uvXZ.x;
+    }
+
+    // --- YZ plane (+X/–X faces) ---
+    vec2 uvYZ = vec2(pp.z, pp.y) * 0.5 + 0.5;
+    if (normal.x > 0.0) {
+        uvYZ.x = 1.0 - uvYZ.x;
+    }
+    uvYZ.y = 1.0 - uvYZ.y;
+
+    vec3 cXY = texture(texArr, vec3(uvXY, layer.z)).rgb;
+    vec3 cXZ = texture(texArr, vec3(uvXZ, layer.y)).rgb;
+    vec3 cYZ = texture(texArr, vec3(uvYZ, layer.x)).rgb;
+
     return cXY * w.z
     + cXZ * w.y
     + cYZ * w.x;
 }
+
 
 vec2 minID(vec2 res1, vec2 res2) {
     return (res1.x < res2.x) ? res1 : res2;
@@ -357,7 +380,11 @@ vec3 getMaterial(vec3 p, float id, vec3 normal) {
         return vec3(object.r, object.g, object.b);
     }
 
-    return triPlanarArray(textureArray, p, normal, object.textureScale, object.materialID);
+    if (object.materialID == -2) {
+        return triPlanarArray(textureArray, p, normal, object.textureScale, vec3(object.textureXY, object.textureXZ, object.textureYZ));
+    }
+
+    return triPlanarArray(textureArray, p, normal, object.textureScale, vec3(object.materialID));
 }
 
 vec3 getLight(vec3 p, vec3 rd, float id) {
