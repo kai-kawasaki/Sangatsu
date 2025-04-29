@@ -30,17 +30,22 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Persistent mapping, lighting consistent culling, and frames in flight.">
+    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Removed redundancies, fixed comments.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/fragment.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/include/SSBOManager.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/SSBOManager.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/Object.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/Object.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/fragment.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Application.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Application.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/SSBOManager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/SSBOManager.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Object.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,12 +65,12 @@
     &quot;assignee&quot;: &quot;Kyle-Zagers&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/kai-kawasaki/Sangatsu.git",
-    "accountId": "48f2015d-42f9-4b2b-8c8f-9fe4147c240e"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/kai-kawasaki/Sangatsu.git&quot;,
+    &quot;accountId&quot;: &quot;48f2015d-42f9-4b2b-8c8f-9fe4147c240e&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="mock://C:/Users/kylez/CLionProjects/Sangatsu/src/Application.cpp" root0="SKIP_HIGHLIGHTING" />
   </component>
@@ -120,11 +125,6 @@
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="glad" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="opengl-mingw-boilerplate" TARGET_NAME="glad" CONFIG_NAME="Debug">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -171,7 +171,8 @@
       <workItem from="1745010194654" duration="230000" />
       <workItem from="1745010531179" duration="28000" />
       <workItem from="1745010632687" duration="3208000" />
-      <workItem from="1745645552190" duration="27435000" />
+      <workItem from="1745645552190" duration="30648000" />
+      <workItem from="1745907546875" duration="2639000" />
     </task>
     <task id="LOCAL-00001" summary="Fixed SSBOs for object positions saved in C++ for shader use.">
       <option name="closed" value="true" />
@@ -237,7 +238,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745791415352</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Removed redundancies, fixed comments.">
+      <option name="closed" value="true" />
+      <created>1745792714395</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1745792714395</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -267,6 +276,7 @@
     <MESSAGE value="Small optimizations." />
     <MESSAGE value="Upgraded to OpenGL 4.4" />
     <MESSAGE value="Persistent mapping, lighting consistent culling, and frames in flight." />
-    <option name="LAST_COMMIT_MESSAGE" value="Persistent mapping, lighting consistent culling, and frames in flight." />
+    <MESSAGE value="Removed redundancies, fixed comments." />
+    <option name="LAST_COMMIT_MESSAGE" value="Removed redundancies, fixed comments." />
   </component>
 </project>

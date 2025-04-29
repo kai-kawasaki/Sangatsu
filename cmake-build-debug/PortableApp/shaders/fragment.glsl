@@ -4,19 +4,21 @@
 in vec3 color;
 layout (location = 0) out vec4 FragColor;
 
-struct object {
-    float x, y, z;
-    float r, g, b;
+struct Object {
+    float x, y, z; // position
+    float r, g, b; // color
+    float i, j, k; // scale
+    int objectType;
 };
 
 // triPlanar(programTexture1, p, normal, size);
 
 layout (std430, binding = 0) buffer VisibleObjects {
-    object visibleObjects[];
+    Object visibleObjects[];
 };
 
 layout (std430, binding = 1) buffer AllObjects {
-    object allObjects[];
+    Object allObjects[];
 };
 
 
@@ -63,6 +65,27 @@ vec2 minID(vec2 res1, vec2 res2) {
     return (res1.x < res2.x) ? res1 : res2;
 }
 
+float getObject(Object object, vec3 pos) {
+    // 0 = box
+    // 1 = sphere
+    // 2 = cylinder
+    // 3 = cone
+    // 4 = torus
+    // 5 = plane
+    // 6 = capsule
+    // 7 = ellipsoid
+    vec3 location = vec3(object.x, object.y, object.z);
+    switch (object.objectType) {
+        case 0:
+        return fBox(pos-location, vec3(object.i, object.j, object.k));
+        case 1:
+        return fSphere(pos-location, object.i);
+        case 10:
+        return fMenger(pos-location, 5, object.i);
+    }
+    return 0.0;
+}
+
 vec2 calcSDF(vec3 pos, bool cull) {
 
 //    vec2 plane = ;
@@ -71,16 +94,13 @@ vec2 calcSDF(vec3 pos, bool cull) {
 
     if (cull) {
         for (int i = 0; i < u_countBox; i++) {
-            vec3 location = vec3(visibleObjects[i].x, visibleObjects[i].y, visibleObjects[i].z);
-            dist = minID(vec2(fBox(pos-location, vec3(0.5)), float(i)), dist);
+            dist = minID(vec2(getObject(visibleObjects[i], pos), float(i)), dist);
         }
     } else {
         for (int i = 0; i < allObjects.length(); i++) {
-            vec3 location = vec3(allObjects[i].x, allObjects[i].y, allObjects[i].z);
-            dist = minID(vec2(fBox(pos-location, vec3(0.5)), float(i)), dist);
+            dist = minID(vec2(getObject(allObjects[i], pos), float(i)), dist);
         }
     }
-
 
     return dist;
 }

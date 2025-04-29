@@ -6,16 +6,22 @@
 #define OBJECT_H
 
 #pragma once
+#include <array>
+#include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
 
 struct Object {
     glm::vec3 position;
     glm::vec3 color;
-    // float x, y, z;
-    // float r, g, b;
-    // Object(float x, float y, float z, float r, float g, float b);
-    Object(glm::vec3 position, glm::vec3 color);
+    glm::vec3 scale;
+    int objectType;
+    Object(glm::vec3 position, glm::vec3 color, glm::vec3 scale, int objectType);
 };
 
 
 #endif //OBJECT_H
+
+
+// float x, y, z;
+// float r, g, b;
+// Object(float x, float y, float z, float r, float g, float b);

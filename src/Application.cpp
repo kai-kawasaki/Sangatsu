@@ -87,14 +87,15 @@ Application::Application(int w, int h, const char* t) {
 
     // initial voxel list
     _objects = {
-        Object({4, 1, 3}, {1, 0, 0}),
-        Object({0, 10, 0}, {0, 1, 0}),
-        Object({5, 5, 6}, {0, 0, 1}),
-        Object({6, 5, 5}, {1, 1, 0}),
+        Object({4, 1, 3}, {1, 0, 0}, glm::vec3(0.5f), 0),
+        Object({0, 10, 0}, {0, 1, 0}, glm::vec3(0.5f), 10),
+        Object({5, 5, 6}, {0, 0, 1}, glm::vec3(0.5f), 0),
+        Object({6, 5, 5}, {1, 1, 0}, glm::vec3(0.5f), 0),
+        // Object({0, 0, 0}, {1, 1, 1}, {6,0.5,6}, 0),
     };
-    for (int i = -8; i < 8; i++) {
-        for (int j = -8; j < 8; j++) {
-            _objects.emplace_back(Object({i, 0, j}, {1, 1, 1}));
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            _objects.emplace_back(Object({i, 0, j}, {1, 1, 1}, glm::vec3(0.5f), 0));
         }
     }
 
