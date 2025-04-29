@@ -87,17 +87,19 @@ Application::Application(int w, int h, const char* t) {
 
     // initial voxel list
     _objects = {
-        Object({4, 1, 3}, {1, 0, 0}, glm::vec3(0.5f), 0),
-        Object({0, 10, 0}, {0, 1, 0}, glm::vec3(0.5f), 10),
-        Object({5, 5, 6}, {0, 0, 1}, glm::vec3(0.5f), 0),
-        Object({6, 5, 5}, {1, 1, 0}, glm::vec3(0.5f), 0),
-        // Object({0, 0, 0}, {1, 1, 1}, {6,0.5,6}, 0),
+        Object({4, 1, 3}, glm::vec3(0.5f), 0, 1),
+        Object({0, 10, 0}, glm::vec3(0.5f), 10, {0, 1, 0}),
+        Object({5, 5, 6}, glm::vec3(0.5f), 0, {0, 0, 1}),
+        Object({6, 5, 5}, glm::vec3(0.5f), 0, {1, 1, 0}),
+        Object({0, 0, 0}, {10,0.5,10}, 0, {1, 1, 1}),
+        Object({1.4, 1, 1}, glm::vec3(0.1f), 1, {0.761, 0, 1}, 5, 0.3f, 1),
+        Object({1, 1, 1}, glm::vec3(0.5f), 0, {0.7, 0, 1}, 5, 0.3f),
     };
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            _objects.emplace_back(Object({i, 0, j}, {1, 1, 1}, glm::vec3(0.5f), 0));
-        }
-    }
+    // for (int i = 0; i < 8; i++) {
+    //     for (int j = 0; j < 8; j++) {
+    //         _objects.emplace_back(Object({i, 0, j}, {1, 1, 1}, glm::vec3(0.5f), 0));
+    //     }
+    // }
 
     _ssbo       = std::make_unique<SSBOManager>(_objects);
     _rayMarcher = std::make_unique<RayMarcher>(*_shader);
@@ -194,6 +196,7 @@ void Application::loop() {
         float tanVFOV = std::tan(_camera->halfVFOV());
 
         for (size_t i = 0; i < _objects.size(); i++) {
+            /* TODO: Reimplement culling with BVH.
             const auto& obj = _objects[i];
             glm::vec3 toObj = obj.position - _camPos;
 
@@ -211,6 +214,7 @@ void Application::loop() {
             float halfH = zc * tanVFOV;
             if (xc >  halfW + kRadius || xc < -halfW - kRadius) continue;
             if (yc >  halfH + kRadius || yc < -halfH - kRadius) continue;
+            */
 
             _visibleIndices.push_back(i);
         }

@@ -34,17 +34,16 @@ void RayMarcher::init() {
     glBindVertexArray(0);
 }
 
-void RayMarcher::render(float w,float h,
-                        float time,float scroll,
+void RayMarcher::render(const float width, const float height,
+                        const float time, const float scroll,
                         const glm::vec3& camPos,
                         const glm::vec3& camTarget,
-                        bool flashlightOn,
-                        int renderMode,
-                        GLuint texID,
-                        int countBox)
-{
+                        const bool flashlightOn,
+                        const int renderMode,
+                        const GLuint textureID,
+                        const int countObjects) const {
     _shader.use();
-    glUniform2f(glGetUniformLocation(_shader.id(),"u_resolution"), w, h);
+    glUniform2f(glGetUniformLocation(_shader.id(),"u_resolution"), width, height);
     glUniform1f(glGetUniformLocation(_shader.id(),"u_time"), time);
     glUniform1f(glGetUniformLocation(_shader.id(),"u_scroll"), scroll);
     glUniform3fv(glGetUniformLocation(_shader.id(),"u_camPos"),
@@ -53,10 +52,10 @@ void RayMarcher::render(float w,float h,
                  1, glm::value_ptr(camTarget));
     glUniform1i(glGetUniformLocation(_shader.id(),"u_flashlight"), flashlightOn);
     glUniform1i(glGetUniformLocation(_shader.id(),"u_renderMode"), renderMode);
-    glUniform1i(glGetUniformLocation(_shader.id(),"u_countBox"), countBox);
+    glUniform1i(glGetUniformLocation(_shader.id(),"u_countObjects"), countObjects);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
 
     glBindVertexArray(_vao);
     glDrawArrays(GL_TRIANGLES,0,6);

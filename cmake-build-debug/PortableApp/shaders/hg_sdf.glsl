@@ -524,9 +524,42 @@ float pReflect(inout vec3 p, vec3 planeNormal, float offset) {
 ////////////////////////////////////////////////////////////////
 
 
+float opSmoothUnion( float d1, float d2, float k )
+{
+	float h = clamp( 0.5 + 0.5*(d2-d1)/k, 0.0, 1.0 );
+	return mix( d2, d1, h ) - k*h*(1.0-h);
+}
+
+float opSmoothSubtraction( float d1, float d2, float k )
+{
+	float h = clamp( 0.5 - 0.5*(d2+d1)/k, 0.0, 1.0 );
+	return mix( d2, -d1, h ) + k*h*(1.0-h);
+}
+
+float opSmoothIntersection( float d1, float d2, float k )
+{
+	float h = clamp( 0.5 - 0.5*(d2-d1)/k, 0.0, 1.0 );
+	return mix( d2, d1, h ) + k*h*(1.0-h);
+}
+
+float opSubtraction( float d1, float d2 )
+{
+	return max(-d1,d2);
+}
+
+float opUnion( float d1, float d2 )
+{
+	return min(d1,d2);
+}
+
 // The "Chamfer" flavour makes a 45-degree chamfered edge (the diagonal of a square of size <r>):
 float fOpUnionChamfer(float a, float b, float r) {
 	return min(min(a, b), (a - r + b)*sqrt(0.5));
+}
+
+float opIntersection( float d1, float d2 )
+{
+	return max(d1,d2);
 }
 
 // Intersection has to deal with what is normally the inside of the resulting object

@@ -15,7 +15,12 @@ struct Object {
     glm::vec3 color;
     glm::vec3 scale;
     int objectType;
-    Object(glm::vec3 position, glm::vec3 color, glm::vec3 scale, int objectType);
+    int operation;
+    float blendRadius;
+    int groupLength;
+    int materialID;
+    Object(glm::vec3 position, glm::vec3 scale, int objectType, glm::vec3 color, int operation = 0, float blendRadius = 0, int groupLength = 0, int materialID = 0);
+    Object(glm::vec3 position, glm::vec3 scale, int objectType, int materialID, int operation = 0, float blendRadius = 0, int groupLength = 0);
 };
 
 

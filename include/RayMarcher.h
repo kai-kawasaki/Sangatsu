@@ -23,7 +23,7 @@ public:
                 bool flashlightOn,
                 int renderMode,
                 GLuint textureID,
-                int countBox = 0);
+                int countObjects = 0) const;
 
 private:
     Shader& _shader;

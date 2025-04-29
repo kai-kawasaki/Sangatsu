@@ -9,9 +9,11 @@ struct Object {
     float r, g, b; // color
     float i, j, k; // scale
     int objectType;
+    int operation;
+    float blendRadius;
+    int groupLength;
+    int materialID;
 };
-
-// triPlanar(programTexture1, p, normal, size);
 
 layout (std430, binding = 0) buffer VisibleObjects {
     Object visibleObjects[];
@@ -31,7 +33,7 @@ uniform vec3 u_camPos;
 uniform vec3 u_camTarget;
 uniform int u_flashlight;
 uniform int u_renderMode;
-uniform int u_countBox;
+uniform int u_countObjects;
 
 uniform sampler2D programTexture1;
 
@@ -80,30 +82,203 @@ float getObject(Object object, vec3 pos) {
         return fBox(pos-location, vec3(object.i, object.j, object.k));
         case 1:
         return fSphere(pos-location, object.i);
+        case 2:
+        return fCylinder(pos-location, object.i, object.j);
+        case 3:
+        return fCone(pos-location, object.i, object.j);
         case 10:
         return fMenger(pos-location, 5, object.i);
     }
     return 0.0;
 }
 
-vec2 calcSDF(vec3 pos, bool cull) {
+//vec2 calcSDF(vec3 pos, bool cull) {
+//
+////    vec2 plane = ;
+////    vec2 dist = vec2(fPlane(pos, vec3(0.0, 1.0, 0.0), 1.0), -1.0);
+//    vec2 dist = vec2(MAX_DIST_TO_TRAVEL, -1.0); // y is the object ID for material.
+//
+////    if (cull) {
+////        for (int i = 0; i < u_countObjects; i++) {
+////            dist = minID(vec2(getObject(visibleObjects[i], pos), float(i)), dist);
+////        }
+////    } else {
+////        for (int i = 0; i < allObjects.length(); i++) {
+////            dist = minID(vec2(getObject(allObjects[i], pos), float(i)), dist);
+////        }
+////    }
+//
+//    int operation = visibleObjects[0].operation;
+//    vec2 operationDist = vec2(MAX_DIST_TO_TRAVEL, -1.0);
+//
+//    if (cull) {
+//        int i = 0;
+//        while (i < u_countObjects) {
+//            while (visibleObjects[i].operation == operation && i < u_countObjects) {
+//                switch (operation) {
+//                    case 0:
+//                        operationDist = minID(vec2(getObject(visibleObjects[i], pos), float(i)), operationDist);
+//                        break;
+//                    case 1:
+//                        operationDist = minID(vec2(opSmoothUnion(getObject(visibleObjects[i], pos), operationDist.x, visibleObjects[i].blendRadius), float(i)), operationDist);
+//                        break;
+//                }
+//                i++;
+//            }
+//            operation = visibleObjects[i].operation;
+//            dist = minID(operationDist, dist);
+//            operationDist = vec2(MAX_DIST_TO_TRAVEL, -1.0);
+//            i++;
+//        }
+//    } else {
+//        for (int i = 0; i < allObjects.length(); i++) {
+//            dist = minID(vec2(getObject(allObjects[i], pos), float(i)), dist);
+//        }
+//    }
+//
+//    return dist;
+//}
 
-//    vec2 plane = ;
-//    vec2 dist = vec2(fPlane(pos, vec3(0.0, 1.0, 0.0), 1.0), -1.0);
-    vec2 dist = vec2(MAX_DIST_TO_TRAVEL, -1.0);
+// helper for intersection: pick the farthest distance, tracking ID
+vec2 maxID(vec2 a, vec2 b) {
+    return (a.x > b.x) ? a : b;
+}
+
+vec2 calcSDF(vec3 pos, bool cull) {
+    vec2 sceneDist = vec2(MAX_DIST_TO_TRAVEL, -1.0);
 
     if (cull) {
-        for (int i = 0; i < u_countBox; i++) {
-            dist = minID(vec2(getObject(visibleObjects[i], pos), float(i)), dist);
+        int i = 0;
+        while (i < u_countObjects) {
+            // head of this group
+            Object head = visibleObjects[i];
+            int glen = head.groupLength;
+            int last = min(i + glen, u_countObjects - 1);
+
+            // --- initialize accumulator from the first object in the group ---
+            float d0 = getObject(head, pos);
+            vec2 groupDist = vec2(d0, float(i));
+
+            // --- fold in each of the remaining members j = i+1 .. last ---
+            for (int j = i + 1; j <= last; ++j) {
+                Object o = visibleObjects[j];
+                float dj = getObject(o, pos);
+
+                // choose the operation of this *member*, not the head
+                switch (o.operation) {
+                    case 0: {
+                        // hard‐union = min(d1, d2)
+                        float u = opUnion(groupDist.x, dj);
+                        // whichever was nearer before union
+                        float uID = (groupDist.x < dj) ? groupDist.y : float(j);
+                        groupDist = vec2(u, uID);
+                    } break;
+
+                    case 1: {
+                        // smooth‐union
+                        float su = opSmoothUnion(groupDist.x, dj, o.blendRadius);
+                        float suID = (groupDist.x < dj) ? groupDist.y : float(j);
+                        groupDist = vec2(su, suID);
+                    } break;
+
+                    case 2: {
+                        // hard‐intersection = max(d1, d2)
+                        vec2 inter = maxID(vec2(dj, float(j)), groupDist);
+                        groupDist = inter;
+                    } break;
+
+                    case 3: {
+                        // smooth‐intersection
+                        float si = opSmoothIntersection(groupDist.x, dj, o.blendRadius);
+                        // whichever was “farther” before smoothing
+                        float siID = (groupDist.x > dj) ? groupDist.y : float(j);
+                        groupDist = vec2(si, siID);
+                    } break;
+
+                    case 4: {
+                        // hard‐subtraction = max(-d1, d2)
+                        float hs = opSubtraction(groupDist.x, dj);
+                        // pick ID of the branch that set the max:
+                        // if -d1 > d2, we keep the original; else we switch to j
+                        float hsID = (-groupDist.x > dj) ? groupDist.y : float(j);
+                        groupDist = vec2(hs, hsID);
+                    } break;
+
+                    case 5: {
+                        // smooth‐subtraction
+                        float ss = opSmoothSubtraction(groupDist.x, dj, o.blendRadius);
+                        // pick the ID of whichever region “won” before smoothing:
+                        // if original (d1) dominated, keep its ID; else use j
+                        float ssID = (groupDist.x < -dj) ? groupDist.y : float(j);
+                        groupDist = vec2(ss, ssID);
+                    } break;
+
+                    // add more cases here if you introduce new ops…
+                }
+
+            }
+
+            // --- merge this group’s result into the overall scene ---
+            sceneDist = minID(groupDist, sceneDist);
+
+            // advance to next group
+            i = last + 1;
         }
+
     } else {
-        for (int i = 0; i < allObjects.length(); i++) {
-            dist = minID(vec2(getObject(allObjects[i], pos), float(i)), dist);
+        // ——— non-culled path over allObjects ———
+        int i = 0;
+        while (i < allObjects.length()) {
+            Object head = allObjects[i];
+            int last = min(i + head.groupLength, allObjects.length() - 1);
+
+            float d0 = getObject(head, pos);
+            vec2 groupDist = vec2(d0, float(i));
+
+            for (int j = i + 1; j <= last; ++j) {
+                Object o = allObjects[j];
+                float dj = getObject(o, pos);
+
+                switch (o.operation) {
+                    case 0: {
+                        float u = opUnion(groupDist.x, dj);
+                        float uID = (groupDist.x < dj) ? groupDist.y : float(j);
+                        groupDist = vec2(u, uID);
+                    } break;
+                    case 1: {
+                        float su = opSmoothUnion(groupDist.x, dj, o.blendRadius);
+                        float suID = (groupDist.x < dj) ? groupDist.y : float(j);
+                        groupDist = vec2(su, suID);
+                    } break;
+                    case 2: {
+                        groupDist = maxID(vec2(dj, float(j)), groupDist);
+                    } break;
+                    case 3: {
+                        float si = opSmoothIntersection(groupDist.x, dj, o.blendRadius);
+                        float siID = (groupDist.x > dj) ? groupDist.y : float(j);
+                        groupDist = vec2(si, siID);
+                    } break;
+                    case 4: {
+                        float hs = opSubtraction(groupDist.x, dj);
+                        float hsID = (-groupDist.x > dj) ? groupDist.y : float(j);
+                        groupDist = vec2(hs, hsID);
+                    } break;
+                    case 5: {
+                        float ss = opSmoothSubtraction(groupDist.x, dj, o.blendRadius);
+                        float ssID = (groupDist.x < -dj) ? groupDist.y : float(j);
+                        groupDist = vec2(ss, ssID);
+                    } break;
+                }
+            }
+
+            sceneDist = minID(groupDist, sceneDist);
+            i = last + 1;
         }
     }
 
-    return dist;
+    return sceneDist;
 }
+
 
 
 float calcAO(vec3 pos, vec3 normal) { //Ambient occlusion
@@ -171,6 +346,16 @@ float rMarch(vec3 rOrig, vec3 rDir) {
     return dOrig;
 }
 
+vec3 getMaterial(vec3 p, float id, vec3 normal, float size) {
+    switch (visibleObjects[int(id)].materialID) {
+        case 0:
+            return vec3(visibleObjects[int(id)].r, visibleObjects[int(id)].g, visibleObjects[int(id)].b);
+        case 1:
+            return triPlanar(programTexture1, p, normal, size);
+    }
+    return vec3(0.0);
+}
+
 vec3 getLight(vec3 p, vec3 rd, float id) {
     vec3 lightPos = vec3(200.0, 550.0, -250.0);
     vec3 L = normalize(lightPos - p);
@@ -180,9 +365,7 @@ vec3 getLight(vec3 p, vec3 rd, float id) {
 
     // Fetch the object's color based on its ID
     int objID = int(id);
-    vec3 color = vec3(visibleObjects[objID].r, visibleObjects[objID].g, visibleObjects[objID].b);
-//    vec3 color = vec3(objID/100.0f, 0, 0);
-
+    vec3 color = getMaterial(p, N.w, N.xyz, 0.5);
 
     vec3 specColor = vec3(0.6, 0.5, 0.4);
     vec3 specular = 1.3 * specColor * pow(clamp(dot(R, V), 0.0, 1.0), 10.0);
@@ -356,7 +539,7 @@ void main() {
     vec3 finalCol = col;
 
     // — compute digit IDs
-    int count = u_countBox;
+    int count = u_countObjects;
 //    int count = visibleObjects.length();
     int d0 = count % 10;
     int d1 = (count / 10) % 10;
