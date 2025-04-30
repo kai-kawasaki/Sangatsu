@@ -4,6 +4,7 @@
 
 #include "RayMarcher.h"
 #include <glm/gtc/type_ptr.hpp>
+#include <vector>
 
 RayMarcher::RayMarcher(Shader& s) : _shader(s), _vao(0), _vbo(0) {}
 
@@ -53,6 +54,35 @@ void RayMarcher::render(const float width, const float height,
     glUniform1i(glGetUniformLocation(_shader.id(),"u_flashlight"), flashlightOn);
     glUniform1i(glGetUniformLocation(_shader.id(),"u_renderMode"), renderMode);
     glUniform1i(glGetUniformLocation(_shader.id(),"u_countObjects"), countObjects);
+
+    struct Light {
+        float size;
+        glm::vec3 position;
+        glm::vec3 color;
+        glm::vec3 direction;
+        float focus;
+        float spread;
+    };
+
+    std::vector<Light> lights = {
+        { 0.3f, {5.0f, 5.0f, 0.0f}, {0.8f, 0.7f, 0.6f}, {-1.0f, -1.0f, 0.0f}, 2.0f, 0.8f },
+        { 0.2f, {-3.0f, 2.0f, 3.0f}, {0.1f, 0.15f, 0.5f}, {1.0f, -0.5f, -1.0f}, 1.5f, 0.6f }
+    };
+
+    // Send light count
+    glUniform1i(glGetUniformLocation(_shader.id(), "u_lightCount"), static_cast<GLint>(lights.size()));
+
+    // Send each light's properties
+    for (size_t i = 0; i < lights.size(); ++i) {
+        std::string base = "u_lights[" + std::to_string(i) + "].";
+        glUniform1f(glGetUniformLocation(_shader.id(), (base + "size").c_str()), lights[i].size);
+        glUniform3fv(glGetUniformLocation(_shader.id(), (base + "pos").c_str()), 1, glm::value_ptr(lights[i].position));
+        glUniform3fv(glGetUniformLocation(_shader.id(), (base + "col").c_str()), 1, glm::value_ptr(lights[i].color));
+        glUniform3fv(glGetUniformLocation(_shader.id(), (base + "dir").c_str()), 1, glm::value_ptr(lights[i].direction));
+        glUniform1f(glGetUniformLocation(_shader.id(), (base + "focus").c_str()), lights[i].focus);
+        glUniform1f(glGetUniformLocation(_shader.id(), (base + "spread").c_str()), lights[i].spread);
+    }
+
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureID);

@@ -4,10 +4,20 @@
 in vec3 color;
 layout (location = 0) out vec4 FragColor;
 
+// Core SDF primitive types and operations (assumed from the included hg_sdf.glsl)
+// Constants for rendering
+const float MAX_STEPS = 500.0;
+const float MIN_DIST_TO_SDF = 0.001;
+const float MAX_DIST_TO_TRAVEL = 100.0;
+const float EPSILON = 0.001;
+const float LOD_MULTIPLIER = 0.06;
+//const float PI = 3.14159265359;
+
+// Object structure with added displacement fields
 struct Object {
-    float x, y, z; // position
-    float r, g, b; // color
-    float i, j, k; // scale
+    float x, y, z;   // position
+    float r, g, b;   // color
+    float i, j, k;   // scale
     int objectType;
     int operation;
     float blendRadius;
@@ -17,15 +27,19 @@ struct Object {
     int textureXZ;
     int textureYZ;
     float textureScale;
-// New PBR texture layers
+// PBR texture layers
     int albedoID;
     int normalID;
     int metallicID;
     int roughnessID;
     int aoID;
     int heightID;
+// Displacement parameters
+    float displacementStrength; // Scale of displacement effect
+    int displacementMode;       // 0=none, 1=height-based, 2=adaptive, 3=vector-field
 };
 
+// Buffer bindings
 layout (std430, binding = 0) buffer VisibleObjects {
     Object visibleObjects[];
 };
@@ -34,9 +48,7 @@ layout (std430, binding = 1) buffer AllObjects {
     Object allObjects[];
 };
 
-
-precision mediump float;
-
+// Uniforms
 uniform vec2 u_resolution;
 uniform float u_time;
 uniform float u_scroll;
@@ -45,17 +57,9 @@ uniform vec3 u_camTarget;
 uniform int u_flashlight;
 uniform int u_renderMode;
 uniform int u_countObjects;
-
 uniform sampler2DArray textureArray;
 
-const float MAX_STEPS = 500.0;
-const float MIN_DIST_TO_SDF = 0.001;
-const float MAX_DIST_TO_TRAVEL = 100.0;
-const float EPSILON = 0.001;
-const float LOD_MULTIPLIER = 0.06;
-//const float PI = 3.14159265359;
-
-
+// Light structure
 struct Light {
     float size;
     vec3 pos;
@@ -65,32 +69,161 @@ struct Light {
     float spread;
 };
 
-// PBR structure to hold all material maps
+// Light array uniforms
+const int MAX_LIGHTS = 8;  // Define a reasonable maximum
+uniform int u_lightCount;
+uniform Light u_lights[MAX_LIGHTS];
+
+// PBR material maps
 struct PBRMaps {
     vec3 albedo;
     vec3 normalRGB;
     float metallic, roughness, ao, height;
 };
 
-vec3 triPlanar(sampler2D tex, vec3 p, vec3 normal, float size) {
-    p*=(1.0/size);
-    normal = abs(normal);
-    normal = pow(normal, vec3(5.0));
-    normal /= normal.x + normal.y + normal.z;
-    return (texture(tex, p.xy * 0.5 + 0.5) * normal.z +
-    texture(tex, p.xz * 0.5 + 0.5) * normal.y +
-    texture(tex, p.yz * 0.5 + 0.5) * normal.x).rgb;
+// Displacement cache for performance optimization
+struct DisplacementCache {
+    float minHeight;      // Minimum height value in texture
+    float maxHeight;      // Maximum height value in texture
+    float avgHeight;      // Average height value
+    float heightRange;    // Range from min to max
+    float avgGradient;    // Average gradient magnitude (for step size control)
+};
+
+// Forward declarations of functions
+float getObject(Object object, vec3 pos, float distFromCamera);
+vec2 calcSDF(vec3 pos, bool cull);
+vec3 calcNormal(vec3 p, float epsilon);
+vec3 getLightPBR(vec3 hitPos, vec3 rayDir, float objectID);
+vec3 getLightPhong(vec3 hitPos, vec3 rayDir, float objectID);
+vec3 rCam(vec2 uv);
+float calcShadow(vec3 origin, vec3 direction, float lightRadius);
+void createTBN(vec3 normal, out vec3 tangent, out vec3 bitangent);
+
+//------------------------------------------------------------------
+// DISPLACEMENT MAPPING FUNCTIONS
+//------------------------------------------------------------------
+
+// Estimate normal for a primitive - used in displacement calculations
+vec3 estimateNormal(vec3 p, Object obj) {
+    vec3 location = vec3(obj.x, obj.y, obj.z);
+    vec3 baseNormal;
+    vec3 d;
+
+    // Analytical normal based on primitive type
+    switch (obj.objectType) {
+        case 0: // Box
+        d = p - location;
+        vec3 s = vec3(obj.i, obj.j, obj.k);
+
+        vec3 a = abs(d) - s;
+        float maxComp = max(a.x, max(a.y, a.z));
+
+        if (maxComp == a.x) baseNormal = vec3(sign(d.x), 0.0, 0.0);
+        else if (maxComp == a.y) baseNormal = vec3(0.0, sign(d.y), 0.0);
+        else baseNormal = vec3(0.0, 0.0, sign(d.z));
+        break;
+
+        case 1: // Sphere
+        baseNormal = normalize(p - location);
+        break;
+
+        case 2: // Cylinder
+        d = p - location;
+        baseNormal = normalize(vec3(d.x, 0.0, d.z));
+        break;
+
+        case 3: // Cone
+        // Simplified cone normal approximation
+        d = p - location;
+        float angle = atan(obj.j / obj.i);
+        vec2 q = vec2(length(d.xz), d.y);
+        baseNormal = normalize(vec3(q.x * cos(angle), sin(angle), q.x * sin(angle)));
+        break;
+
+        case 10: // Menger - use numerical for complex shapes
+        default:
+        // Use numerical normal WITHOUT calling getObject
+        vec2 e = vec2(EPSILON, 0.0);
+        vec3 location = vec3(obj.x, obj.y, obj.z);
+
+        // Calculate base SDF directly without recursion
+        float baseDist;
+        vec3 pos = p;
+
+        // Handle only the base object type without displacement
+        switch (obj.objectType) {
+            case 0:
+            baseDist = fBox(pos-location, vec3(obj.i, obj.j, obj.k));
+            break;
+            case 1:
+            baseDist = fSphere(pos-location, obj.i);
+            break;
+            case 2:
+            baseDist = fCylinder(pos-location, obj.i, obj.j);
+            break;
+            case 3:
+            baseDist = fCone(pos-location, obj.i, obj.j);
+            break;
+            case 10:
+            baseDist = fMenger(pos-location, 5, obj.i);
+            break;
+            default:
+            baseDist = 0.0;
+        }
+
+        // Calculate direct SDF values at offset points
+        float dx, dy, dz;
+        pos = p - e.xyy;
+        switch (obj.objectType) {
+            case 0: dx = fBox(pos-location, vec3(obj.i, obj.j, obj.k)); break;
+            case 1: dx = fSphere(pos-location, obj.i); break;
+            case 2: dx = fCylinder(pos-location, obj.i, obj.j); break;
+            case 3: dx = fCone(pos-location, obj.i, obj.j); break;
+            case 10: dx = fMenger(pos-location, 5, obj.i); break;
+            default: dx = 0.0;
+        }
+
+        pos = p - e.yxy;
+        switch (obj.objectType) {
+            case 0: dy = fBox(pos-location, vec3(obj.i, obj.j, obj.k)); break;
+            case 1: dy = fSphere(pos-location, obj.i); break;
+            case 2: dy = fCylinder(pos-location, obj.i, obj.j); break;
+            case 3: dy = fCone(pos-location, obj.i, obj.j); break;
+            case 10: dy = fMenger(pos-location, 5, obj.i); break;
+            default: dy = 0.0;
+        }
+
+        pos = p - e.yyx;
+        switch (obj.objectType) {
+            case 0: dz = fBox(pos-location, vec3(obj.i, obj.j, obj.k)); break;
+            case 1: dz = fSphere(pos-location, obj.i); break;
+            case 2: dz = fCylinder(pos-location, obj.i, obj.j); break;
+            case 3: dz = fCone(pos-location, obj.i, obj.j); break;
+            case 10: dz = fMenger(pos-location, 5, obj.i); break;
+            default: dz = 0.0;
+        }
+
+        baseNormal = normalize(vec3(
+        baseDist - dx,
+        baseDist - dy,
+        baseDist - dz
+        ));
+        break;
+    }
+
+    return baseNormal;
 }
 
-vec3 triPlanarArray(
-sampler2DArray texArr,
-vec3           p,
-vec3           normal,
-float          size,
-vec3           layer    // three slice indices
-) {
-    vec3 pp = p * (1.0 / size);
-    vec3 w  = abs(normal);
+// Tri-planar mapping for height map sampling
+float sampleDisplacement(vec3 p, vec3 normal, int heightMapID, float scale) {
+    if (heightMapID < 0) return 0.0;
+
+    // Transform into texture space
+    vec3 pp = p * (1.0/scale);
+
+    // Compute blend weights
+    vec3 w = abs(normal);
     w = pow(w, vec3(5.0));
     w /= (w.x + w.y + w.z);
 
@@ -103,365 +236,145 @@ vec3           layer    // three slice indices
 
     // --- XZ plane (+Y/–Y faces) ---
     vec2 uvXZ = vec2(pp.x, pp.z) * 0.5 + 0.5;
-    if (normal.y > 0.0) {
+    if (normal.y < 0.0) {
         uvXZ.x = 1.0 - uvXZ.x;
     }
 
     // --- YZ plane (+X/–X faces) ---
     vec2 uvYZ = vec2(pp.z, pp.y) * 0.5 + 0.5;
-    if (normal.x > 0.0) {
+    if (normal.x < 0.0) {
         uvYZ.x = 1.0 - uvYZ.x;
     }
     uvYZ.y = 1.0 - uvYZ.y;
 
-    vec3 cXY = texture(texArr, vec3(uvXY, layer.z)).rgb;
-    vec3 cXZ = texture(texArr, vec3(uvXZ, layer.y)).rgb;
-    vec3 cYZ = texture(texArr, vec3(uvYZ, layer.x)).rgb;
+    // Sample height maps from each plane
+    float hXY = texture(textureArray, vec3(uvXY, heightMapID)).r;
+    float hXZ = texture(textureArray, vec3(uvXZ, heightMapID)).r;
+    float hYZ = texture(textureArray, vec3(uvYZ, heightMapID)).r;
 
-    return cXY * w.z
-    + cXZ * w.y
-    + cYZ * w.x;
+    // Blend based on normal direction
+    return hXY * w.z + hXZ * w.y + hYZ * w.x;
 }
 
-// New PBR tri-planar mapping with parallax
-// Improved tri-planar mapping for PBR with corrected face orientations
-PBRMaps triPlanarPBR(
-sampler2DArray arr,
-vec3           p,
-vec3           n,
-float          scale,
-int            albedoLayer,
-int            normalLayer,
-int            metallicLayer,
-int            roughnessLayer,
-int            aoLayer,
-int            heightLayer,
-vec3           viewDir   // for parallax
-) {
-    // 1) Transform into texture-space
-    vec3 pp = p * (1.0/scale);
+// Displacement modes implementation
 
-    // 2) Compute blend weights for smooth transitions between faces
-    vec3 w = abs(n);
-    w = pow(w, vec3(5.0));
-    w /= (w.x + w.y + w.z);
+// Mode 1: Basic height-based displacement
+float displacementHeight(Object obj, vec3 p, vec3 normal) {
+    if (obj.heightID < 0 || obj.displacementStrength <= 0.0) return 0.0;
 
-    // 3) UVs per plane - FIXED for correct orientation
+    float height = sampleDisplacement(p, normal, obj.heightID, obj.textureScale);
+    // Remap from [0,1] to [-0.5,0.5]
+    return (height - 0.5) * obj.displacementStrength;
+}
 
-    // --- XY plane (+Z/–Z faces) ---
-    vec2 uvXY = pp.xy * 0.5 + 0.5;
-    // For front face (+Z), standard UV
-    // For back face (-Z), flip X coordinate
-    if (n.z < 0.0) {
-        uvXY.x = 1.0 - uvXY.x;
-    }
-    // Always flip Y in texture space
-    uvXY.y = 1.0 - uvXY.y;
+// Mode 2: Adaptive displacement with LOD control
+float displacementAdaptive(Object obj, vec3 p, vec3 normal, float distFromCamera) {
+    if (obj.heightID < 0 || obj.displacementStrength <= 0.0) return 0.0;
 
-    // --- XZ plane (+Y/–Y faces) ---
-    vec2 uvXZ = vec2(pp.x, pp.z) * 0.5 + 0.5;
-    // For bottom face (-Y), standard UV
-    // For top face (+Y), flip X coordinate - THIS WAS BACKWARDS!
-    if (n.y < 0.0) { // FIXED: Changed from > to <
-        uvXZ.x = 1.0 - uvXZ.x;
-    }
+    // LOD control - reduce displacement detail for distant objects
+    float lodFactor = 1.0 - clamp(distFromCamera / MAX_DIST_TO_TRAVEL, 0.0, 0.95);
 
-    // --- YZ plane (+X/–X faces) ---
-    vec2 uvYZ = vec2(pp.z, pp.y) * 0.5 + 0.5;
-    // For right face (+X), standard UV
-    // For left face (-X), flip X coordinate
-    if (n.x < 0.0) { // FIXED: Changed from > to <
-        uvYZ.x = 1.0 - uvYZ.x;
-    }
-    // Always flip Y in texture space
-    uvYZ.y = 1.0 - uvYZ.y;
+    // Calculate mip level based on distance (approximate)
+    float mipLevel = floor(4.0 * (1.0 - lodFactor)); // 0-4 mip levels
 
-    // 4) Debug weights - uncomment to diagnose face mapping
-    // Output weights as colors to check orientation
-    /*
-    PBRMaps debug;
-    debug.albedo = vec3(w.x, w.y, w.z);
-    debug.normalRGB = vec3(0.5, 0.5, 1.0);
-    debug.metallic = 0.0;
-    debug.roughness = 0.5;
-    debug.ao = 1.0;
-    debug.height = 0.0;
-    return debug;
-    */
+    // We would ideally use textureGrad or textureLod here if supported
+    float height = sampleDisplacement(p, normal, obj.heightID, obj.textureScale);
 
-    // 4) Parallax occlusion on each UV if height map is provided
-    if (heightLayer >= 0) {
-        float hXY = texture(arr, vec3(uvXY, heightLayer)).r;
-        float hXZ = texture(arr, vec3(uvXZ, heightLayer)).r;
-        float hYZ = texture(arr, vec3(uvYZ, heightLayer)).r;
+    // Apply displacement with distance-based attenuation
+    return (height - 0.5) * obj.displacementStrength * lodFactor;
+}
 
-        // Project viewDir into each plane
-        vec2 vXY = normalize(viewDir.xy);
-        vec2 vXZ = normalize(viewDir.xz);
-        vec2 vYZ = normalize(viewDir.yz);
+// Mode 3: Vector displacement - more advanced than height-based
+vec3 displacementVector(Object obj, vec3 p, vec3 normal) {
+    if (obj.heightID < 0 || obj.displacementStrength <= 0.0) return vec3(0.0);
 
-        // Apply parallax offset
-        float parallaxScale = 0.05 * scale; // Adjust parallax strength
-        uvXY = uvXY - vXY * (hXY * parallaxScale / max(dot(n, viewDir), 0.01));
-        uvXZ = uvXZ - vXZ * (hXZ * parallaxScale / max(dot(n, viewDir), 0.01));
-        uvYZ = uvYZ - vYZ * (hYZ * parallaxScale / max(dot(n, viewDir), 0.01));
+    // In vector displacement, we use all 3 channels of the texture (RGB)
+    // to represent displacement in tangent space
+
+    // This is a simplified version - ideally we'd sample each RGB channel separately
+    float dispX = sampleDisplacement(p, normal, obj.heightID, obj.textureScale) - 0.5;
+    float dispY = sampleDisplacement(p, normal, obj.heightID+1, obj.textureScale) - 0.5; // Next texture in array
+    float dispZ = sampleDisplacement(p, normal, obj.heightID+2, obj.textureScale) - 0.5; // Next+1 texture
+
+    // Create a tangent space from the normal
+    vec3 tangent, bitangent;
+    createTBN(normal, tangent, bitangent);
+
+    // Transform displacement from tangent space to world space
+    return (tangent * dispX + normal * dispY + bitangent * dispZ) * obj.displacementStrength;
+}
+
+// Integrated displacement function
+float applyDisplacement(Object obj, vec3 p, float baseDist, float distFromCamera) {
+    if (obj.displacementMode == 0 || obj.heightID < 0 || obj.displacementStrength <= 0.0) {
+        return baseDist; // No displacement
     }
 
-    // 5) Initialize PBR maps
-    PBRMaps m;
+    vec3 normal = estimateNormal(p, obj);
+    float displacement = 0.0;
 
-    // Sample and blend each map (only if valid layer ID)
-    m.albedo = (albedoLayer >= 0) ?
-    texture(arr, vec3(uvXY, albedoLayer)).rgb * w.z +
-    texture(arr, vec3(uvXZ, albedoLayer)).rgb * w.y +
-    texture(arr, vec3(uvYZ, albedoLayer)).rgb * w.x :
-    vec3(1.0);
+    switch (obj.displacementMode) {
+        case 1: // Basic height displacement
+        displacement = displacementHeight(obj, p, normal);
+        break;
 
-    m.normalRGB = (normalLayer >= 0) ?
-    texture(arr, vec3(uvXY, normalLayer)).rgb * w.z +
-    texture(arr, vec3(uvXZ, normalLayer)).rgb * w.y +
-    texture(arr, vec3(uvYZ, normalLayer)).rgb * w.x :
-    vec3(0.5, 0.5, 1.0);
+        case 2: // Adaptive LOD displacement
+        displacement = displacementAdaptive(obj, p, normal, distFromCamera);
+        break;
 
-    m.metallic = (metallicLayer >= 0) ?
-    texture(arr, vec3(uvXY, metallicLayer)).r * w.z +
-    texture(arr, vec3(uvXZ, metallicLayer)).r * w.y +
-    texture(arr, vec3(uvYZ, metallicLayer)).r * w.x :
-    0.0;
-
-    m.roughness = (roughnessLayer >= 0) ?
-    texture(arr, vec3(uvXY, roughnessLayer)).r * w.z +
-    texture(arr, vec3(uvXZ, roughnessLayer)).r * w.y +
-    texture(arr, vec3(uvYZ, roughnessLayer)).r * w.x :
-    0.5;
-
-    m.ao = (aoLayer >= 0) ?
-    texture(arr, vec3(uvXY, aoLayer)).r * w.z +
-    texture(arr, vec3(uvXZ, aoLayer)).r * w.y +
-    texture(arr, vec3(uvYZ, aoLayer)).r * w.x :
-    1.0;
-
-    m.height = (heightLayer >= 0) ?
-    texture(arr, vec3(uvXY, heightLayer)).r * w.z +
-    texture(arr, vec3(uvXZ, heightLayer)).r * w.y +
-    texture(arr, vec3(uvYZ, heightLayer)).r * w.x :
-    0.0;
-
-    return m;
-}
-
-// Unpack normal map to [-1,1] range
-vec3 unpackNormal(vec3 rgb) {
-    return normalize(rgb * 2.0 - 1.0);
-}
-
-// Transform normal from tangent space to world space
-// Targeted fix for triPlanarNormal function
-vec3 triPlanarNormal(
-vec3 geomNormal,
-sampler2DArray arr,
-vec3 p,
-float scale,
-int normalLayer,
-vec3 viewDir
-) {
-    if (normalLayer < 0) {
-        return geomNormal;
+        case 3: { // Vector displacement
+            vec3 dispVec = displacementVector(obj, p, normal);
+            // Project displacement onto SDF gradient direction (approximated by normal)
+            displacement = dot(dispVec, normal);
+            break;
+        }
     }
 
-    // Get absolute normal for face determination
-    vec3 absN = abs(geomNormal);
-
-    // Create weight for face blending
-    vec3 w = absN;
-    w = pow(w, vec3(5.0));
-    w /= (w.x + w.y + w.z);
-
-    // Transform position to texture space
-    vec3 pp = p * (1.0/scale);
-
-    // --- FACE 1: XY plane (Z normal) ---
-    vec2 uvXY = pp.xy * 0.5 + 0.5;
-    if (geomNormal.z < 0.0) {
-        uvXY.x = 1.0 - uvXY.x; // Flip for back face
-    }
-    uvXY.y = 1.0 - uvXY.y; // Flip Y - texture convention
-
-    // --- FACE 2: XZ plane (Y normal) ---
-    vec2 uvXZ = vec2(pp.x, pp.z) * 0.5 + 0.5;
-    if (geomNormal.y < 0.0) {
-        uvXZ.x = 1.0 - uvXZ.x; // Flip for bottom face
-    }
-
-    // --- FACE 3: YZ plane (X normal) ---
-    vec2 uvYZ = vec2(pp.z, pp.y) * 0.5 + 0.5;
-    if (geomNormal.x < 0.0) {
-        uvYZ.x = 1.0 - uvYZ.x; // Flip for left face
-    }
-    uvYZ.y = 1.0 - uvYZ.y; // Flip Y - texture convention
-
-    // Sample normal maps
-    vec3 tcNormalXY = texture(arr, vec3(uvXY, normalLayer)).rgb;
-    vec3 tcNormalXZ = texture(arr, vec3(uvXZ, normalLayer)).rgb;
-    vec3 tcNormalYZ = texture(arr, vec3(uvYZ, normalLayer)).rgb;
-
-    // Unpack to -1 to 1 range
-    vec3 tanNormalXY = tcNormalXY * 2.0 - 1.0;
-    vec3 tanNormalXZ = tcNormalXZ * 2.0 - 1.0;
-    vec3 tanNormalYZ = tcNormalYZ * 2.0 - 1.0;
-
-    // Create proper tangent spaces for each face
-    // CORRECTED: Fixed the tanget/bitangent orientations
-
-    // For XY plane (Z normal)
-    vec3 zTangent = normalize(vec3(1.0, 0.0, 0.0));
-    vec3 zBitangent = normalize(vec3(0.0, 1.0, 0.0));
-    vec3 zNormal = vec3(0.0, 0.0, sign(geomNormal.z));
-
-    // For XZ plane (Y normal)
-    vec3 yTangent = normalize(vec3(1.0, 0.0, 0.0));
-    vec3 yBitangent = normalize(vec3(0.0, 0.0, 1.0));
-    vec3 yNormal = vec3(0.0, sign(geomNormal.y), 0.0);
-
-    // For YZ plane (X normal)
-    vec3 xTangent = normalize(vec3(0.0, 0.0, 1.0));
-    vec3 xBitangent = normalize(vec3(0.0, 1.0, 0.0));
-    vec3 xNormal = vec3(sign(geomNormal.x), 0.0, 0.0);
-
-    // Convert tangent space normal to world space normal
-    // Using the tangent space basis vectors
-    vec3 worldNormalXY = normalize(
-    tanNormalXY.x * zTangent +
-    tanNormalXY.y * zBitangent +
-    tanNormalXY.z * zNormal
-    );
-
-    vec3 worldNormalXZ = normalize(
-    tanNormalXZ.x * yTangent +
-    tanNormalXZ.y * yBitangent +
-    tanNormalXZ.z * yNormal
-    );
-
-    vec3 worldNormalYZ = normalize(
-    tanNormalYZ.x * xTangent +
-    tanNormalYZ.y * xBitangent +
-    tanNormalYZ.z * xNormal
-    );
-
-    // KEY FIX: Ensure the XY plane (Z normal) is emphasized instead of YZ plane
-    // Swap weighting between X and Z components to prioritize XY plane
-    vec3 fixedWeights = vec3(w.z, w.y, w.x);
-
-    // Combine with weights - using the FIXED weights
-    vec3 finalNormal = normalize(
-    worldNormalXY * fixedWeights.x +
-    worldNormalXZ * fixedWeights.y +
-    worldNormalYZ * fixedWeights.z
-    );
-
-    return finalNormal;
+    return baseDist - displacement;
 }
 
-// PBR Functions
-float DistributionGGX(vec3 N, vec3 H, float roughness) {
-    float a = roughness*roughness;
-    float a2 = a*a;
-    float NdotH = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH*NdotH;
+//------------------------------------------------------------------
+// CORE SDF FUNCTIONS
+//------------------------------------------------------------------
 
-    float nom   = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom = PI * denom * denom;
-
-    return nom / denom;
-}
-
-float GeometrySchlickGGX(float NdotV, float roughness) {
-    float r = (roughness + 1.0);
-    float k = (r*r) / 8.0;
-
-    float nom   = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
-
-    return nom / denom;
-}
-
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
-    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
-
-    return ggx1 * ggx2;
-}
-
-vec3 fresnelSchlick(float cosTheta, vec3 F0) {
-    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
-}
-
-// Cook-Torrance BRDF
-vec3 cookTorrance(vec3 N, vec3 V, vec3 L, vec3 albedo, float metallic, float roughness, float ao) {
-    vec3 H = normalize(V + L);
-
-    vec3 F0 = vec3(0.04);
-    F0 = mix(F0, albedo, metallic);
-
-    // Cook-Torrance BRDF
-    float NDF = DistributionGGX(N, H, roughness);
-    float G   = GeometrySmith(N, V, L, roughness);
-    vec3  F   = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-    vec3 numerator    = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001; // prevent div by zero
-    vec3 specular = numerator / denominator;
-
-    // Diffuse contribution
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - metallic;
-
-    // Add to outgoing radiance Lo
-    float NdotL = max(dot(N, L), 0.0);
-
-    return (kD * albedo / PI + specular) * NdotL;
-}
-
-vec2 minID(vec2 res1, vec2 res2) {
-    return (res1.x < res2.x) ? res1 : res2;
-}
-
-float getObject(Object object, vec3 pos) {
-    // 0 = box
-    // 1 = sphere
-    // 2 = cylinder
-    // 3 = cone
-    // 4 = torus
-    // 5 = plane
-    // 6 = capsule
-    // 7 = ellipsoid
+// Main SDF function with displacement
+float getObject(Object object, vec3 pos, float distFromCamera) {
+    // First get the base SDF value
     vec3 location = vec3(object.x, object.y, object.z);
+    float baseDist;
+
     switch (object.objectType) {
         case 0:
-        return fBox(pos-location, vec3(object.i, object.j, object.k));
+        baseDist = fBox(pos-location, vec3(object.i, object.j, object.k));
+        break;
         case 1:
-        return fSphere(pos-location, object.i);
+        baseDist = fSphere(pos-location, object.i);
+        break;
         case 2:
-        return fCylinder(pos-location, object.i, object.j);
+        baseDist = fCylinder(pos-location, object.i, object.j);
+        break;
         case 3:
-        return fCone(pos-location, object.i, object.j);
+        baseDist = fCone(pos-location, object.i, object.j);
+        break;
         case 10:
-        return fMenger(pos-location, 5, object.i);
+        baseDist = fMenger(pos-location, 5, object.i);
+        break;
+        default:
+        return 0.0;
     }
-    return 0.0;
+
+    // Apply displacement if enabled
+    if (object.displacementMode > 0 && object.heightID >= 0 && object.displacementStrength > 0.0) {
+        baseDist = applyDisplacement(object, pos, baseDist, distFromCamera);
+    }
+
+    return baseDist;
 }
 
-// helper for intersection: pick the farthest distance, tracking ID
-vec2 maxID(vec2 a, vec2 b) {
-    return (a.x > b.x) ? a : b;
-}
-
+// Calculate scene SDF - minimum distance to any object
 vec2 calcSDF(vec3 pos, bool cull) {
     vec2 sceneDist = vec2(MAX_DIST_TO_TRAVEL, -1.0);
+    float distFromCamera = length(pos - u_camPos);
 
     if (cull) {
         int i = 0;
@@ -472,122 +385,43 @@ vec2 calcSDF(vec3 pos, bool cull) {
             int last = min(i + glen, u_countObjects - 1);
 
             // --- initialize accumulator from the first object in the group ---
-            float d0 = getObject(head, pos);
-            vec2 groupDist = vec2(d0, float(i));
+            float d0 = getObject(visibleObjects[i], pos, distFromCamera);
+            float da = d0;
 
-            // --- fold in each of the remaining members j = i+1 .. last ---
-            for (int j = i + 1; j <= last; ++j) {
-                Object o = visibleObjects[j];
-                float dj = getObject(o, pos);
+            // --- accumulate influence of the rest of the group ---
+            for (int j = i + 1; j <= last && j < u_countObjects; j++) {
+                float dj = getObject(visibleObjects[j], pos, distFromCamera);
 
-                // choose the operation of this *member*, not the head
-                switch (o.operation) {
-                    case 0: {
-                        // hard‐union = min(d1, d2)
-                        float u = opUnion(groupDist.x, dj);
-                        // whichever was nearer before union
-                        float uID = (groupDist.x < dj) ? groupDist.y : float(j);
-                        groupDist = vec2(u, uID);
-                    } break;
-
-                    case 1: {
-                        // smooth‐union
-                        float su = opSmoothUnion(groupDist.x, dj, o.blendRadius);
-                        float suID = (groupDist.x < dj) ? groupDist.y : float(j);
-                        groupDist = vec2(su, suID);
-                    } break;
-
-                    case 2: {
-                        // hard‐intersection = max(d1, d2)
-                        vec2 inter = maxID(vec2(dj, float(j)), groupDist);
-                        groupDist = inter;
-                    } break;
-
-                    case 3: {
-                        // smooth‐intersection
-                        float si = opSmoothIntersection(groupDist.x, dj, o.blendRadius);
-                        // whichever was "farther" before smoothing
-                        float siID = (groupDist.x > dj) ? groupDist.y : float(j);
-                        groupDist = vec2(si, siID);
-                    } break;
-
-                    case 4: {
-                        // hard‐subtraction = max(-d1, d2)
-                        float hs = opSubtraction(groupDist.x, dj);
-                        // pick ID of the branch that set the max:
-                        // if -d1 > d2, we keep the original; else we switch to j
-                        float hsID = (-groupDist.x > dj) ? groupDist.y : float(j);
-                        groupDist = vec2(hs, hsID);
-                    } break;
-
-                    case 5: {
-                        // smooth‐subtraction
-                        float ss = opSmoothSubtraction(groupDist.x, dj, o.blendRadius);
-                        // pick the ID of whichever region "won" before smoothing:
-                        // if original (d1) dominated, keep its ID; else use j
-                        float ssID = (groupDist.x < -dj) ? groupDist.y : float(j);
-                        groupDist = vec2(ss, ssID);
-                    } break;
-
-                    // add more cases here if you introduce new ops…
-                }
-
-            }
-
-            // --- merge this group's result into the overall scene ---
-            sceneDist = minID(groupDist, sceneDist);
-
-            // advance to next group
-            i = last + 1;
-        }
-
-    } else {
-        // ——— non-culled path over allObjects ———
-        int i = 0;
-        while (i < allObjects.length()) {
-            Object head = allObjects[i];
-            int last = min(i + head.groupLength, allObjects.length() - 1);
-
-            float d0 = getObject(head, pos);
-            vec2 groupDist = vec2(d0, float(i));
-
-            for (int j = i + 1; j <= last; ++j) {
-                Object o = allObjects[j];
-                float dj = getObject(o, pos);
-
-                switch (o.operation) {
-                    case 0: {
-                        float u = opUnion(groupDist.x, dj);
-                        float uID = (groupDist.x < dj) ? groupDist.y : float(j);
-                        groupDist = vec2(u, uID);
-                    } break;
-                    case 1: {
-                        float su = opSmoothUnion(groupDist.x, dj, o.blendRadius);
-                        float suID = (groupDist.x < dj) ? groupDist.y : float(j);
-                        groupDist = vec2(su, suID);
-                    } break;
-                    case 2: {
-                        groupDist = maxID(vec2(dj, float(j)), groupDist);
-                    } break;
-                    case 3: {
-                        float si = opSmoothIntersection(groupDist.x, dj, o.blendRadius);
-                        float siID = (groupDist.x > dj) ? groupDist.y : float(j);
-                        groupDist = vec2(si, siID);
-                    } break;
-                    case 4: {
-                        float hs = opSubtraction(groupDist.x, dj);
-                        float hsID = (-groupDist.x > dj) ? groupDist.y : float(j);
-                        groupDist = vec2(hs, hsID);
-                    } break;
-                    case 5: {
-                        float ss = opSmoothSubtraction(groupDist.x, dj, o.blendRadius);
-                        float ssID = (groupDist.x < -dj) ? groupDist.y : float(j);
-                        groupDist = vec2(ss, ssID);
-                    } break;
+                if (visibleObjects[j].operation == 0) {
+                    // Union
+                    if (visibleObjects[j].blendRadius > 0.0) {
+                        da = opSmoothUnion(da, dj, visibleObjects[j].blendRadius);
+                    } else {
+                        da = opUnion(da, dj);
+                    }
+                } else if (visibleObjects[j].operation == 1) {
+                    // Subtraction
+                    if (visibleObjects[j].blendRadius > 0.0) {
+                        da = opSmoothSubtraction(dj, da, visibleObjects[j].blendRadius);
+                    } else {
+                        da = opSubtraction(dj, da);
+                    }
+                } else if (visibleObjects[j].operation == 2) {
+                    // Intersection
+                    if (visibleObjects[j].blendRadius > 0.0) {
+                        da = opSmoothIntersection(da, dj, visibleObjects[j].blendRadius);
+                    } else {
+                        da = opIntersection(da, dj);
+                    }
                 }
             }
 
-            sceneDist = minID(groupDist, sceneDist);
+            // --- check if this group is the closest so far ---
+            if (da < sceneDist.x) {
+                sceneDist.x = da;
+                sceneDist.y = float(i); // Store object ID of the group head
+            }
+
             i = last + 1;
         }
     }
@@ -595,226 +429,211 @@ vec2 calcSDF(vec3 pos, bool cull) {
     return sceneDist;
 }
 
-float calcAO(vec3 pos, vec3 normal) { //Ambient occlusion
-    float occ = 0.0;
-    float sca = 1.0;
+// Enhanced normal calculation for displaced surfaces
+vec3 calcNormal(vec3 p, float epsilon) {
+    // Determine the closest object for accurate normal calculation
+    vec2 sdfResult = calcSDF(p, true);
+    int objID = int(sdfResult.y);
 
-    for(int i=0; i<5; i++) {
-        float hrconst = 0.03; // larger values = AO
-        float hr = hrconst + 0.15*float(i)/4.0;
-        vec3 aopos =  normal * hr + pos;
-        float dd = calcSDF( aopos , true).x;
-        occ += (hr-dd)*sca;
-        sca *= 0.95;
+    // If we have a valid object with displacement, use a specialized approach
+    if (objID >= 0 && objID < visibleObjects.length()) {
+        Object obj = visibleObjects[objID];
+
+        if (obj.displacementMode > 0 && obj.heightID >= 0) {
+            // For displaced surfaces, use a smaller epsilon and consider displacement variation
+            float smallerEpsilon = epsilon * 0.5;
+            float distFromCamera = length(p - u_camPos);
+
+            // Forward difference approximation
+            vec2 e = vec2(smallerEpsilon, 0.0);
+
+            // Sample the SDF at offset positions
+            float center = sdfResult.x;
+            float dx = getObject(obj, p + e.xyy, distFromCamera);
+            float dy = getObject(obj, p + e.yxy, distFromCamera);
+            float dz = getObject(obj, p + e.yyx, distFromCamera);
+
+            // Create a more precise normal for displaced surfaces
+            return normalize(vec3(
+            dx - center,
+            dy - center,
+            dz - center
+            ));
+        }
     }
-    return clamp(1.0 - occ*1.5, 0.0, 1.0);
+
+    // Fall back to standard normal calculation for non-displaced surfaces
+    vec2 e = vec2(epsilon, 0);
+    float d = calcSDF(p, true).x;
+    vec3 n = vec3(
+    calcSDF(p + e.xyy, true).x - d,
+    calcSDF(p + e.yxy, true).x - d,
+    calcSDF(p + e.yyx, true).x - d
+    );
+    return normalize(n);
 }
 
-// https://iquilezles.org/articles/rmshadows
-float calcSoftshadow(in vec3 ro, in vec3 rd, float mint, float maxt, float w) {
-    float res = 1.0;
-    float ph = 1e20;
-    float t = mint;
-    for( int i=0; i<256 && t<maxt; i++ )
-    {
-        float h = calcSDF(ro + rd*t, false).x;
-        if( h<0.001 )
-        return 0.0;
-        //float y = h*h/(2.0*ph);
-        float y = (i==0) ? 0.0 : h*h/(2.0*ph);
-        float d = sqrt(h*h-y*y);
-        res = min( res, d/(w*max(0.0,t-y)) );
-        ph = h;
-        t += h;
-    }
-    return res;
-}
+//------------------------------------------------------------------
+// RAY MARCHING AND RENDERING
+//------------------------------------------------------------------
 
-float softShadowPCF(vec3 p, vec3 L) {
-    const int SAMPLES = 8;
-    const float RADIUS = 0.5;    // in world-space
-    float sum = 0.0;
-    // build two orthonormal tangents
-    vec3 T = normalize(cross(abs(L.y) < 0.9 ? vec3(0,1,0) : vec3(1,0,0), L));
-    vec3 B = cross(L, T);
-    for(int i = 0; i < SAMPLES; i++){
-        float theta = 2.0 * 3.14159265 * (float(i) / float(SAMPLES));
-        vec3 offsetDir = normalize(L + (T * cos(theta) + B * sin(theta)) * (RADIUS / length(p - u_camPos)));
-        sum += calcSoftshadow(p, offsetDir, 0.01, 20.0, 32.0);
-    }
-    return sum / float(SAMPLES);
-}
-
-
-vec4 getNormal(vec3 pos) {
-    vec2 dist = calcSDF(pos, true);
-    vec2 e = vec2(EPSILON, 0.0);
-
-    vec3 normal = dist.x - vec3(
-    calcSDF(pos-e.xyy, true).x,
-    calcSDF(pos-e.yxy, true).x,
-    calcSDF(pos-e.yyx, true).x);
-
-    return vec4(normalize(normal), dist.y);
-}
-
+// Enhanced ray marching with better convergence near surfaces
 float rMarch(vec3 rOrig, vec3 rDir) {
-    float dOrig = 0.0; // distance from ray origin
+    float dOrig = 0.0;
+    float relaxation = 1.0;
+    float lastMinDist = MAX_DIST_TO_TRAVEL;
 
     for(int i=0; i<MAX_STEPS; i++) {
         vec3 rPos = rOrig + rDir * dOrig;
-        float dSurf = calcSDF(rPos, true).x;
-        dOrig += dSurf;
-        if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF*clamp(((dOrig*dOrig-3)*LOD_MULTIPLIER),1,MAX_DIST_TO_TRAVEL*MAX_DIST_TO_TRAVEL*LOD_MULTIPLIER)) break;
-        //if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF) break;
+        vec2 sdfResult = calcSDF(rPos, true);
+        float dSurf = sdfResult.x;
+        int objID = int(sdfResult.y);
+
+        // For objects with displacement, use more conservative steps
+        if (objID >= 0 && objID < visibleObjects.length()) {
+            Object obj = visibleObjects[objID];
+            if (obj.displacementMode > 0 && obj.heightID >= 0) {
+                // Use stricter relaxation for displaced surfaces
+                relaxation = 0.5;
+
+                // If we're close to the surface, use even smaller steps
+                if (abs(dSurf) < 0.1) {
+                    relaxation = 0.25;
+                }
+            } else {
+                relaxation = 0.9;
+            }
+        } else {
+            relaxation = 1.0;
+        }
+
+        // Track if we're overshooting (distance increases after decreasing)
+        if (dSurf > lastMinDist && lastMinDist < 0.1) {
+            // We might have overshot a thin feature, take smaller steps
+            relaxation = 0.1;
+        }
+        lastMinDist = min(lastMinDist, dSurf);
+
+        // Apply relaxation factor to step size
+        float step = dSurf * relaxation;
+
+        // Minimum step size to prevent getting stuck
+        step = max(step, MIN_DIST_TO_SDF * 0.1);
+
+        dOrig += step;
+
+        // Progressive hit threshold - larger for distant objects
+        float hitThreshold = MIN_DIST_TO_SDF * (1.0 + 0.01 * dOrig);
+
+        if(abs(dSurf) < hitThreshold || dOrig > MAX_DIST_TO_TRAVEL) break;
     }
 
     return dOrig;
 }
 
-vec3 getMaterial(vec3 p, float id, vec3 normal) {
-    Object object = visibleObjects[int(id)];
+// Helper function for shadow calculation with displacement awareness
+float calcShadow(vec3 origin, vec3 direction, float lightRadius) {
+    float minShadow = 1.0;
+    float maxDistance = 20.0;
+    float t = 0.1; // Start a little away from the surface
 
-    if (object.materialID == -1) {
-        return vec3(object.r, object.g, object.b);
+    // Offset origin slightly to avoid self-shadowing
+    origin += direction * 0.01;
+
+    for (int i = 0; i < 32; i++) {
+        vec3 pos = origin + direction * t;
+        vec2 res = calcSDF(pos, true);
+        float h = res.x;
+
+        // Get the object ID to check if it has displacement
+        int objID = int(res.y);
+        float penumbra = 1.0;
+
+        if (objID >= 0 && objID < visibleObjects.length()) {
+            Object obj = visibleObjects[objID];
+            if (obj.displacementMode > 0 && obj.heightID >= 0) {
+                // Use larger penumbra for objects with displacement
+                penumbra = 4.0;
+            }
+        }
+
+        // Soft shadows with penumbra
+        float y = h*h/(2.0*t);
+        float d = sqrt(h*h-y*y);
+
+        minShadow = min(minShadow, penumbra * d / max(0.0, t - y));
+
+        // Early termination
+        if (minShadow < 0.001 || t >= maxDistance) break;
+
+        // Adaptive step size based on distance
+        t += clamp(h, 0.01, 0.5);
     }
 
-    if (object.materialID == -2) {
-        return triPlanarArray(textureArray, p, normal, object.textureScale, vec3(object.textureXY, object.textureXZ, object.textureYZ));
-    }
-
-    if (object.albedoID == -1) {
-        return triPlanarArray(textureArray, p, normal, object.textureScale, vec3(object.materialID));
-    }
-
-    return triPlanarArray(textureArray, p, normal, object.textureScale, vec3(object.materialID));
+    return clamp(minShadow, 0.0, 1.0);
 }
 
-vec3 getLightPhong(vec3 p, vec3 rd, float id) {
-    vec3 lightPos = vec3(200.0, 550.0, -250.0);
-    vec3 L = normalize(lightPos - p);
-    vec4 N = getNormal(p);
-    vec3 V = -rd;
-    vec3 R = reflect(-L, N.xyz);
+//------------------------------------------------------------------
+// PBR LIGHTING FUNCTIONS
+//------------------------------------------------------------------
 
-    // Fetch the object's color based on its ID
-    int objID = int(id);
-    vec3 color = vec3(visibleObjects[objID].r, visibleObjects[objID].g, visibleObjects[objID].b);
-    //vec3 color = vec3(objID/100.0f, 0, 0);
-
-
-    vec3 specColor = vec3(0.6, 0.5, 0.4);
-    vec3 specular = 1.3 * specColor * pow(clamp(dot(R, V), 0.0, 1.0), 10.0);
-    vec3 diffuse = 0.9 * color * clamp(dot(L, N.xyz), 0.0, 1.0);
-    vec3 ambient = 0.05 * color;
-    vec3 fresnel = 0.15 * color * pow(1.0 + dot(rd, N.xyz), 3.0);
-
-    // shadows
-    float shadow = calcSoftshadow(p, L, 0.01, 100.0, 0.01);
-    // occ
-    float occ = calcAO(p,N.xyz);
-    // back
-    vec3 back = 0.05 * color * clamp(dot(N.xyz, -L), 0.0, 1.0);
-
-    return  (back + ambient + fresnel) * occ + (specular * occ + diffuse) * shadow;
+// Create a helper function to build TBN matrix for normal mapping
+void createTBN(vec3 normal, out vec3 tangent, out vec3 bitangent) {
+    // Create a tangent that's perpendicular to the normal
+    vec3 upVector = abs(normal.y) > 0.99 ? vec3(0, 0, 1) : vec3(0, 1, 0);
+    tangent = normalize(cross(upVector, normal));
+    bitangent = normalize(cross(normal, tangent));
 }
 
-// PBR lighting calculation
-// PBR lighting calculation with improved dark areas
-vec3 getLightPBR(vec3 p, vec3 rd, float id) {
-    // Setup lighting information
-    vec3 lightPos = vec3(200.0, 550.0, -250.0);
-    vec3 lightColor = vec3(1.0, 0.95, 0.9);
-    float lightIntensity = 20.0;
+// PBR helper functions
+float distributionGGX(float NdotH, float roughness) {
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH2 = NdotH * NdotH;
 
-    // Get the normal at this point
-    vec4 normalData = getNormal(p);
-    vec3 geomNormal = normalData.xyz;
-    int objID = int(normalData.w);
+    float denom = NdotH2 * (a2 - 1.0) + 1.0;
+    denom = PI * denom * denom;
 
-    // Get the object that was hit
-    Object obj = visibleObjects[objID];
-
-    // View and light vectors
-    vec3 V = normalize(-rd);  // View direction
-    vec3 L = normalize(lightPos - p); // Light direction
-
-    // Sample PBR maps using triplanar mapping
-    PBRMaps maps = triPlanarPBR(
-    textureArray,
-    p,
-    geomNormal,
-    obj.textureScale,
-    obj.albedoID,
-    obj.normalID,
-    obj.metallicID,
-    obj.roughnessID,
-    obj.aoID,
-    obj.heightID,
-    V  // view direction for parallax
-    );
-
-    // If we don't have albedo texture, use object color
-    if (obj.albedoID < 0) {
-        maps.albedo = vec3(obj.r, obj.g, obj.b);
-    }
-
-    // Transform normal if we have a normal map
-    vec3 N = (obj.normalID >= 0) ?
-    triPlanarNormal(geomNormal, textureArray, p, obj.textureScale, obj.normalID, V) :
-    geomNormal;
-
-    // Shadow calculation
-    float shadow = calcSoftshadow(p, L, 0.01, 20.0, 0.8);
-
-    // Calculate Cook-Torrance lighting
-    vec3 H = normalize(V + L);
-    vec3 radiance = lightColor * lightIntensity * max(dot(N, L), 0.0);
-
-    // Calculate Cook-Torrance BRDF
-    vec3 Lo = cookTorrance(N, V, L, maps.albedo, maps.metallic, maps.roughness, maps.ao*calcAO(p, N));
-    Lo *= radiance;
-
-    // Calculate geometric AO
-    float geometricAO = calcAO(p, N);
-
-    // --- IMPROVEMENTS FOR DARK AREAS ---
-
-    // 1. Improved ambient lighting with hemisphere approach
-    vec3 skyColor = vec3(0.5, 0.7, 1.0);
-    vec3 groundColor = vec3(0.1, 0.1, 0.1);
-    float hemiMix = 0.5 * (N.y + 1.0); // -1 to 1 mapped to 0 to 1
-    vec3 hemiLight = mix(groundColor, skyColor, hemiMix);
-    vec3 ambient = hemiLight * maps.albedo * maps.ao * geometricAO * 0.2; // Increased from 0.01 to 0.2
-
-    // 2. Add rim lighting (edge highlight effect)
-    float rimFactor = 1.0 - max(dot(N, V), 0.0);
-    rimFactor = pow(rimFactor, 3.0) * 0.15; // Adjust power and intensity
-    vec3 rim = rimFactor * lightColor * maps.albedo;
-
-    // 3. Add bounce light simulation from the ground/nearby surfaces
-    vec3 groundBounce = vec3(0.3, 0.2, 0.1) * maps.albedo * max(0.0, -N.y) * 0.1;
-
-    // 4. Add subtle fill light from opposite direction to main light
-    vec3 fillLight = maps.albedo * max(0.0, -dot(N, L)) * 0.1;
-
-    // Combine all lighting terms
-    vec3 color = ambient + Lo * shadow + rim + groundBounce + fillLight;
-
-    // Energy conservation - make sure we're not adding too much light
-    color = min(color, maps.albedo * 2.0);
-
-    return color;
+    return a2 / max(denom, 0.0001);
 }
 
+float geometrySchlickGGX(float NdotV, float roughness) {
+    float r = roughness + 1.0;
+    float k = (r * r) / 8.0;
+
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+float geometrySmith(float NdotV, float NdotL, float roughness) {
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// ACES Filmic Tone Mapping (for HDR rendering)
+vec3 ACESFilmicTone(vec3 x) {
+    float a = 2.51;
+    float b = 0.03;
+    float c = 2.43;
+    float d = 0.59;
+    float e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+// Fog effect with improved handling for displaced surfaces
 vec3 applyFog(vec3 color, float distance, vec3 rayDir, vec3 sunDir) {
-    float fogAmount = 1.0 - exp(-distance * 0.00008);
+    float fogAmount = 1.0 - exp(-distance * 0.02);
+
+    // Directional scattering (more light in the direction of the sun)
     float sunAmount = max(dot(rayDir, sunDir), 0.0);
     vec3 fogColor = mix(
-    vec3(0.5, 0.6, 0.7), // base fog color
-    vec3(1.0, 0.9, 0.7), // sun tint
+    vec3(0.5, 0.6, 0.7), // Base fog color
+    vec3(1.0, 0.9, 0.7), // Sun-scattered fog color
     pow(sunAmount, 8.0)
     );
+
     return mix(color, fogColor, fogAmount);
 }
 
@@ -822,6 +641,7 @@ vec2 getUV(vec2 offset) {
     return ((gl_FragCoord.xy + offset) - 0.5 * u_resolution.xy) / u_resolution.y;
 }
 
+// Camera ray from screen UV
 vec3 rCam(vec2 offset) {
     vec2 uv = getUV(offset);
     vec3 rOrig = u_camPos;
@@ -836,22 +656,130 @@ vec3 rCam(vec2 offset) {
     return dir;
 }
 
-vec3 ACESFilmicTone(vec3 x) {
-    const float A=2.51, B=0.03, C=2.43, D=0.59, E=0.14;
-    return clamp((x*(A*x+B)) / (x*(C*x+D)+E), 0.0, 1.0);
+
+// Phong shading
+vec3 getLightPhong(vec3 hitPos, vec3 rayDir, float objectID) {
+    // fetch object color
+    Object obj = visibleObjects[int(objectID)];
+    vec3 N = calcNormal(hitPos, EPSILON);
+    vec3 V = normalize(-rayDir);
+    vec3 colorOut = vec3(0.0);
+    // ambient
+    vec3 ambient = 0.1 * vec3(obj.r, obj.g, obj.b);
+    colorOut += ambient;
+    // loop over lights
+    for(int i = 0; i < u_lightCount; ++i) {
+        Light L = u_lights[i];
+        vec3 Ldir = normalize(L.pos - hitPos);
+        float diff = max(dot(N, Ldir), 0.0);
+        vec3 diffuse = diff * L.col * vec3(obj.r, obj.g, obj.b);
+        // specular
+        vec3 H = normalize(Ldir + V);
+        float spec = pow(max(dot(N, H), 0.0), 16.0);
+        vec3 specular = spec * L.col;
+        // accumulate with attenuation
+        float attenuation = 1.0 / (1.0 + 0.1 * length(L.pos - hitPos));
+        colorOut += attenuation * (diffuse + specular);
+    }
+    return colorOut;
 }
 
+// Tri-planar sampling for textureArray
+vec3 triPlanarArray(sampler2DArray texArr, vec3 p, vec3 normal, float scale, int layer) {
+    vec3 pp = p / scale;
+    vec3 w = abs(normal);
+    w = pow(w, vec3(5.0));
+    w /= (w.x + w.y + w.z);
+    // xy
+    vec2 uvXY = pp.xy * 0.5 + 0.5;
+    if(normal.z < 0.0) uvXY.x = 1.0 - uvXY.x;
+    // xz
+    vec2 uvXZ = pp.xz * 0.5 + 0.5;
+    if(normal.y < 0.0) uvXZ.x = 1.0 - uvXZ.x;
+    // yz
+    vec2 uvYZ = pp.zy * 0.5 + 0.5;
+    if(normal.x < 0.0) uvYZ.x = 1.0 - uvYZ.x;
+    // sample
+    vec3 cXY = texture(texArr, vec3(uvXY, layer)).rgb;
+    vec3 cXZ = texture(texArr, vec3(uvXZ, layer)).rgb;
+    vec3 cYZ = texture(texArr, vec3(uvYZ, layer)).rgb;
+    return cXY * w.z + cXZ * w.y + cYZ * w.x;
+}
+
+// PBR shading (Cook-Torrance)
+vec3 getLightPBR(vec3 hitPos, vec3 rayDir, float objectID) {
+    Object obj    = visibleObjects[int(objectID)];
+    // 1) Base analytic normal
+    vec3 N_analytic = calcNormal(hitPos, EPSILON);
+
+    // 2) Sample and decode the normal map
+    vec3 normalRGB   = triPlanarArray(textureArray, hitPos, N_analytic, obj.textureScale, obj.normalID);
+    vec3 nTangent    = normalize(normalRGB * 2.0 - 1.0);
+
+    // 3) Build TBN & transform to world-space normal
+    vec3 T, B;
+    createTBN(N_analytic, T, B);
+    vec3 N = normalize( T * nTangent.x +
+    B * nTangent.y +
+    N_analytic * nTangent.z );
+
+    vec3 V = normalize(-rayDir);
+
+    // 4) Sample all material maps via tri-planar
+    vec3 albedo    = triPlanarArray(textureArray, hitPos, N, obj.textureScale, obj.albedoID);
+    float metallic = triPlanarArray(textureArray, hitPos, N, obj.textureScale, obj.metallicID).r;
+    float roughness= triPlanarArray(textureArray, hitPos, N, obj.textureScale, obj.roughnessID).r;
+    float ao       = triPlanarArray(textureArray, hitPos, N, obj.textureScale, obj.aoID).r;
+
+    // 5) Precompute F0
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+
+    vec3 Lo = vec3(0.0);
+    for(int i = 0; i < u_lightCount; ++i) {
+        Light L = u_lights[i];
+        vec3 Ldir = normalize(L.pos - hitPos);
+        vec3 H    = normalize(V + Ldir);
+
+        float NdotL = max(dot(N, Ldir), 0.0);
+        float NdotV = max(dot(N, V),    0.0);
+        float NdotH = max(dot(N, H),    0.0);
+        float VdotH = max(dot(V, H),    0.0);
+
+        float D = distributionGGX(NdotH, roughness);
+        float G = geometrySmith(NdotV, NdotL, roughness);
+        vec3  F = fresnelSchlick(VdotH, F0);
+
+        vec3 spec = (D * G * F) / max(4.0 * NdotV * NdotL, 0.001);
+        vec3 kS   = F;
+        vec3 kD   = (1.0 - kS) * (1.0 - metallic);
+
+        float attenuation = 1.0 / dot(L.pos - hitPos, L.pos - hitPos);
+        vec3 irradiance   = L.col * attenuation * NdotL;
+
+        Lo += (kD * albedo / PI + spec) * irradiance;
+    }
+
+    // 6) Ambient + AO
+    vec3 ambient = vec3(0.03) * albedo * ao;
+
+    return ambient + Lo;
+}
+
+
+//------------------------------------------------------------------
+// MAIN FUNCTION
+//------------------------------------------------------------------
+
 void main() {
-    vec2 fragCoord = gl_FragCoord.xy;
-    vec2 uv = fragCoord/u_resolution.xy;
-    vec2 p = uv * 2.0 - 1.0;
-    p.x *= u_resolution.x / u_resolution.y;
+    // Compute ray direction for this fragment
+    vec2 uv = (gl_FragCoord.xy / u_resolution.xy) * 2.0 - 1.0;
+    uv.x *= u_resolution.x / u_resolution.y; // Aspect ratio correction
 
-    // Camera setup (OLD SYSTEM)
+    // Camera setup
     vec3 cameraPos = u_camPos;
-    vec3 rayDir = rCam(vec2(0.0));
+    vec3 rayDir = rCam(uv);
 
-    // Ray marching
+    // Enhanced ray marching with displacement support
     float dist = rMarch(cameraPos, rayDir);
 
     // Initialize color
@@ -883,10 +811,11 @@ void main() {
         color = mix(vec3(1.0), vec3(0.5, 0.7, 1.0), t);
     }
 
+    // Tone mapping
     color = ACESFilmicTone(color);
 
-    // 3) add micro-dither to suppress any residual posterization
-    float d = (fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233))) * 43758.5453) - 0.5) / 255.0;
+    // Micro-dither to reduce banding
+    float d = (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) / 255.0;
     color += d;
 
     // Gamma correction
@@ -896,3 +825,5 @@ void main() {
     FragColor = vec4(color, 1.0);
 }
 
+// Note: This implementation assumes additional functions like getLightPhong, getLightPBR, and rCam
+// are defined elsewhere in your codebase, along with proper tri-planar mapping for PBR textures.

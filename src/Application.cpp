@@ -111,7 +111,7 @@ Application::Application(int w, int h, const char* t) {
         Object({0, 0, 0}, {10,0.5,10}, 0, {1, 1, 1}),
         Object({1.4, 1, 1}, glm::vec3(0.1f), 1, {0.761, 0, 1}, 5, 0.3f, 1),
         Object({1, 1, 1}, glm::vec3(0.5f), 0, {0.7, 0, 1}, 5, 0.3f),
-        Object({4, 4, 4}, glm::vec3(0.5f), 0, 1, 0, 1, 2, 3, 4, 5, 0.25f),
+        Object({4, 4, 4}, glm::vec3(0.5f), 1, 1, 0, 1, 2, 3, 4, 5, 0.25f, 0.2f, 1),
     };
     // for (int i = 0; i < 8; i++) {
     //     for (int j = 0; j < 8; j++) {

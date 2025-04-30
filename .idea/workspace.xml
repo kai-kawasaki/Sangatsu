@@ -30,45 +30,24 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Persistent mapping, lighting consistent culling, and frames in flight.">
+    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Fixed some problems with PBR.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeCache.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeCCompiler.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeCCompiler.cmake" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeCXXCompiler.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeCXXCompiler.cmake" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeDetermineCompilerABI_C.bin" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeDetermineCompilerABI_C.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeDetermineCompilerABI_CXX.bin" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeDetermineCompilerABI_CXX.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeRCCompiler.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeRCCompiler.cmake" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CompilerIdC/a.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CompilerIdC/a.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CompilerIdCXX/a.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CompilerIdCXX/a.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/CMakeConfigureLog.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/CMakeConfigureLog.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TargetDirectories.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TargetDirectories.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-Debug-log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-Debug-log.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-environment.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-environment.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/glad.dir/external/glad/src/glad.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/glad.dir/external/glad/src/glad.c.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Camera.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Camera.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/InputManager.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/InputManager.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/RayMarcher.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/RayMarcher.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Shader.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Shader.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/ShaderPreprocessor.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/ShaderPreprocessor.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Texture.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Texture.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Utilities.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Utilities.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Window.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Window.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/rules.ninja" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/rules.ninja" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/fragment.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/build.ninja" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/build.ninja" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/cmake_install.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/cmake_install.cmake" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/libglad.a" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/libglad.a" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/Object.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/Object.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/fragment.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Application.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Application.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Object.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/RayMarcher.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/RayMarcher.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -274,7 +253,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745791415352</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Fixed some problems with PBR.">
+      <option name="closed" value="true" />
+      <created>1746041698883</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1746041698883</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -304,6 +291,7 @@
     <MESSAGE value="Small optimizations." />
     <MESSAGE value="Upgraded to OpenGL 4.4" />
     <MESSAGE value="Persistent mapping, lighting consistent culling, and frames in flight." />
-    <option name="LAST_COMMIT_MESSAGE" value="Persistent mapping, lighting consistent culling, and frames in flight." />
+    <MESSAGE value="Fixed some problems with PBR." />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed some problems with PBR." />
   </component>
 </project>

@@ -73,7 +73,7 @@ Object::Object(glm::vec3 position, glm::vec3 scale, int objectType, int textureX
 
 }
 
-Object::Object(glm::vec3 position, glm::vec3 scale, int objectType, int materialID, int albedoID, int normalID, int metallicID, int roughnessID, int aoID, int heightID, float textureScale, int operation, float blendRadius, int groupLength)
+Object::Object(glm::vec3 position, glm::vec3 scale, int objectType, int materialID, int albedoID, int normalID, int metallicID, int roughnessID, int aoID, int heightID, float textureScale, float displacementStrength, int displacementMode, int operation, float blendRadius, int groupLength)
     : position(position)
     , color(glm::vec3(0))
     , scale(scale)
@@ -92,6 +92,8 @@ Object::Object(glm::vec3 position, glm::vec3 scale, int objectType, int material
     , roughnessID(roughnessID)
     , aoID(aoID)
     , heightID(heightID)
+    , displacementStrength(displacementStrength)
+    , displacementMode(displacementMode)
 {
 }
 
