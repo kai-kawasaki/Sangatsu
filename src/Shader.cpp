@@ -41,17 +41,20 @@ GLuint Shader::id() const {
     return _program;
 }
 
-GLuint Shader::compile(GLenum type,const std::string& source) {
+GLuint Shader::compile(GLenum type, const std::string& source) {
     GLuint s = glCreateShader(type);
     const char* c = source.c_str();
-    glShaderSource(s,1,&c,nullptr);
+    glShaderSource(s, 1, &c, nullptr);
     glCompileShader(s);
     int ok;
-    glGetShaderiv(s,GL_COMPILE_STATUS,&ok);
+    glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
     if (!ok) {
         char buf[512];
-        glGetShaderInfoLog(s,512,nullptr,buf);
-        std::fprintf(stderr,"ERROR::SHADER::COMPILATION_FAILED\n%s\n",buf);
+        glGetShaderInfoLog(s, 512, nullptr, buf);
+        const char* shaderType = (type == GL_VERTEX_SHADER) ? "VERTEX" :
+                                 (type == GL_FRAGMENT_SHADER) ? "FRAGMENT" : "UNKNOWN";
+        std::fprintf(stderr, "ERROR::SHADER::COMPILATION_FAILED\nType: %s\nSource:\n%s\nError Log:\n%s\n",
+                     shaderType, source.c_str(), buf);
     }
     return s;
 }

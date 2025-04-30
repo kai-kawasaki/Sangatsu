@@ -83,10 +83,16 @@ Application::Application(int w, int h, const char* t) {
     );
 
     std::vector layers = {
-        std::string(TEXTURES_DIR) + "/test.png",
-        std::string(TEXTURES_DIR) + "/sideLog.png",
-        std::string(TEXTURES_DIR) + "/topLog.png",
-        std::string(TEXTURES_DIR) + "/grassTop.png"
+        // std::string(TEXTURES_DIR) + "/test.png",
+        // std::string(TEXTURES_DIR) + "/sideLog.png",
+        // std::string(TEXTURES_DIR) + "/topLog.png",
+        // std::string(TEXTURES_DIR) + "/grassTop.png",
+        std::string(TEXTURES_DIR) + "/chiseled-cobble_albedo.png",
+        std::string(TEXTURES_DIR) + "/chiseled-cobble_normal-ogl.png",
+        std::string(TEXTURES_DIR) + "/chiseled-cobble_metallic.png",
+        std::string(TEXTURES_DIR) + "/chiseled-cobble_roughness.png",
+        std::string(TEXTURES_DIR) + "/chiseled-cobble_ao.png",
+        std::string(TEXTURES_DIR) + "/chiseled-cobble_height.png"
     };
     _texture = std::make_unique<Texture>(layers);
     _texture->bind(0);
@@ -97,14 +103,15 @@ Application::Application(int w, int h, const char* t) {
 
     // initial voxel list
     _objects = {
-        Object({4, 1, 3}, glm::vec3(0.5f), 0, 0, 0.5),
-        Object({4, 2, 5}, glm::vec3(0.5f), 1, 1, 2, 1, 0.5),
+        Object({4, 1, 3}, glm::vec3(0.5f), 0, {0, 1, 0}),
+        // Object({4, 2, 5}, glm::vec3(0.5f), 1, 1, 2, 1, 0.5),
         Object({0, 10, 0}, glm::vec3(0.5f), 10, {0, 1, 0}),
-        Object({5, 5, 6}, glm::vec3(0.5f), 0, {0, 0, 1}),
-        Object({6, 5, 5}, glm::vec3(0.5f), 0, {1, 1, 0}),
-        Object({0, 0, 0}, {10,0.5,10}, 0, 3, 5),
+        Object({5, 5, 6}, glm::vec3(0.5f), 1, {0, 0, 1}, 1, 0.5, 1),
+        Object({6, 5, 6}, glm::vec3(0.5f), 0, {1, 1, 0}, 1, 0.5, 0),
+        Object({0, 0, 0}, {10,0.5,10}, 0, {1, 1, 1}),
         Object({1.4, 1, 1}, glm::vec3(0.1f), 1, {0.761, 0, 1}, 5, 0.3f, 1),
         Object({1, 1, 1}, glm::vec3(0.5f), 0, {0.7, 0, 1}, 5, 0.3f),
+        Object({4, 4, 4}, glm::vec3(0.5f), 0, 1, 0, 1, 2, 3, 4, 5, 0.25f),
     };
     // for (int i = 0; i < 8; i++) {
     //     for (int j = 0; j < 8; j++) {
