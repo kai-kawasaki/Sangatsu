@@ -197,22 +197,22 @@ vec3           viewDir   // for parallax
     */
 
     // 4) Parallax occlusion on each UV if height map is provided
-    if (heightLayer >= 0) {
-        float hXY = texture(arr, vec3(uvXY, heightLayer)).r;
-        float hXZ = texture(arr, vec3(uvXZ, heightLayer)).r;
-        float hYZ = texture(arr, vec3(uvYZ, heightLayer)).r;
-
-        // Project viewDir into each plane
-        vec2 vXY = normalize(viewDir.xy);
-        vec2 vXZ = normalize(viewDir.xz);
-        vec2 vYZ = normalize(viewDir.yz);
-
-        // Apply parallax offset
-        float parallaxScale = 0.05 * scale; // Adjust parallax strength
-        uvXY = uvXY - vXY * (hXY * parallaxScale / max(dot(n, viewDir), 0.01));
-        uvXZ = uvXZ - vXZ * (hXZ * parallaxScale / max(dot(n, viewDir), 0.01));
-        uvYZ = uvYZ - vYZ * (hYZ * parallaxScale / max(dot(n, viewDir), 0.01));
-    }
+//    if (heightLayer >= 0) {
+//        float hXY = texture(arr, vec3(uvXY, heightLayer)).r;
+//        float hXZ = texture(arr, vec3(uvXZ, heightLayer)).r;
+//        float hYZ = texture(arr, vec3(uvYZ, heightLayer)).r;
+//
+//        // Project viewDir into each plane
+//        vec2 vXY = normalize(viewDir.xy);
+//        vec2 vXZ = normalize(viewDir.xz);
+//        vec2 vYZ = normalize(viewDir.yz);
+//
+//        // Apply parallax offset
+//        float parallaxScale = 0.05 * scale; // Adjust parallax strength
+//        uvXY = uvXY - vXY * (hXY * parallaxScale / max(dot(n, viewDir), 0.01));
+//        uvXZ = uvXZ - vXZ * (hXZ * parallaxScale / max(dot(n, viewDir), 0.01));
+//        uvYZ = uvYZ - vYZ * (hYZ * parallaxScale / max(dot(n, viewDir), 0.01));
+//    }
 
     // 5) Initialize PBR maps
     PBRMaps m;
