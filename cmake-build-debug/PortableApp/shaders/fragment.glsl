@@ -24,6 +24,7 @@ struct Object {
     int roughnessID;
     int aoID;
     int heightID;
+    float displacementStrength;
 };
 
 layout (std430, binding = 0) buffer VisibleObjects {
@@ -48,7 +49,6 @@ uniform int u_countObjects;
 uniform sampler2DArray textureArray;
 
 // Constants
-const float DISPLACEMENT_STRENGTH = 0.2;
 const float MAX_STEPS = 500.0;
 const float MIN_DIST_TO_SDF = 0.001;
 const float MAX_DIST_TO_TRAVEL = 100.0;
@@ -681,7 +681,7 @@ float getObject(Object object, vec3 pos) {
         float h = sampleDisplacement(pos, N, object.heightID, object.textureScale) - 0.5;
 
         // push the surface outwards by (h * strength)
-        d -= h * DISPLACEMENT_STRENGTH;
+        d -= h * object.displacementStrength;
     }
 
     return d;

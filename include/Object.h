@@ -29,10 +29,11 @@ struct Object {
     int roughnessID;
     int aoID;
     int heightID;
+    float displacementStrength;
     Object(glm::vec3 position, glm::vec3 scale, int objectType, glm::vec3 color, int operation = 0, float blendRadius = 0, int groupLength = 0);
     Object(glm::vec3 position, glm::vec3 scale, int objectType, int materialID, float textureScale, int operation = 0, float blendRadius = 0, int groupLength = 0);
     Object(glm::vec3 position, glm::vec3 scale, int objectType, int textureXY, int textureXZ, int textureYZ, float textureScale, int operation = 0, float blendRadius = 0, int groupLength = 0);
-    Object(glm::vec3 position, glm::vec3 scale, int objectType, int materialID, int albedoID, int normalID, int metallicID, int roughnessID, int aoID, int heightID, float textureScale, int operation = 0, float blendRadius = 0, int groupLength = 0);
+    Object(glm::vec3 position, glm::vec3 scale, int objectType, int materialID, int albedoID, int normalID, int metallicID, int roughnessID, int aoID, int heightID, float textureScale, float displacementStrength, int operation = 0, float blendRadius = 0, int groupLength = 0);
 };
 
 

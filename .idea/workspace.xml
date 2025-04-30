@@ -30,15 +30,34 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="its messed up.">
+    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="physical bump maps working.">
+      <change afterPath="$PROJECT_DIR$/textures/hammered-gold_albedo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/textures/hammered-gold_ao.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/textures/hammered-gold_height.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/textures/hammered-gold_metallic.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/textures/hammered-gold_normal-ogl.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/textures/hammered-gold_roughness.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/textures/patchy-meadow1_albedo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/textures/patchy-meadow1_ao.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/textures/patchy-meadow1_height.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/textures/patchy-meadow1_metallic.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/textures/patchy-meadow1_normal-ogl.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/textures/patchy-meadow1_roughness.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/fragment.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/Object.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/Object.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/fragment.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Application.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Application.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Object.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -113,7 +132,7 @@
     "cidr.known.project.marker": "true",
     "git-widget-placeholder": "kyle-screwin",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/kylez/Sangatsu/CMakeLists.txt",
+    "last_opened_file_path": "C:/Users/kylez/CLionProjects/Sangatsu/textures",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -123,6 +142,11 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\kylez\CLionProjects\Sangatsu\textures" />
+    </key>
+  </component>
   <component name="RunManager" selected="CMake Application.Package">
     <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
@@ -266,7 +290,15 @@
       <option name="project" value="LOCAL" />
       <updated>1746044838652</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="physical bump maps working.">
+      <option name="closed" value="true" />
+      <created>1746047981037</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1746047981037</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -298,6 +330,7 @@
     <MESSAGE value="Persistent mapping, lighting consistent culling, and frames in flight." />
     <MESSAGE value="Fixed some problems with PBR." />
     <MESSAGE value="its messed up." />
-    <option name="LAST_COMMIT_MESSAGE" value="its messed up." />
+    <MESSAGE value="physical bump maps working." />
+    <option name="LAST_COMMIT_MESSAGE" value="physical bump maps working." />
   </component>
 </project>
