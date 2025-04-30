@@ -5,9 +5,9 @@ in vec3 color;
 layout (location = 0) out vec4 FragColor;
 
 struct Object {
-    float x, y, z; // position
-    float r, g, b; // color
-    float i, j, k; // scale
+    float x, y, z;        // position
+    float r, g, b;        // color
+    float i, j, k;        // scale
     int objectType;
     int operation;
     float blendRadius;
@@ -17,7 +17,7 @@ struct Object {
     int textureXZ;
     int textureYZ;
     float textureScale;
-// New PBR texture layers
+// PBR texture layers
     int albedoID;
     int normalID;
     int metallicID;
@@ -34,7 +34,6 @@ layout (std430, binding = 1) buffer AllObjects {
     Object allObjects[];
 };
 
-
 precision mediump float;
 
 uniform vec2 u_resolution;
@@ -48,13 +47,13 @@ uniform int u_countObjects;
 
 uniform sampler2DArray textureArray;
 
+// Constants
+const float DISPLACEMENT_STRENGTH = 0.2;
 const float MAX_STEPS = 500.0;
 const float MIN_DIST_TO_SDF = 0.001;
 const float MAX_DIST_TO_TRAVEL = 100.0;
 const float EPSILON = 0.001;
 const float LOD_MULTIPLIER = 0.06;
-//const float PI = 3.14159265359;
-
 
 struct Light {
     float size;
@@ -71,6 +70,14 @@ struct PBRMaps {
     vec3 normalRGB;
     float metallic, roughness, ao, height;
 };
+
+// Function declarations
+vec2 minID(vec2 res1, vec2 res2);
+float getObjectRaw(Object object, vec3 pos);
+float getObject(Object object, vec3 pos);
+vec2 maxID(vec2 a, vec2 b);
+vec2 calcSDF(vec3 pos, bool cull);
+vec3 getPrimitiveNormal(Object object, vec3 pos);
 
 vec3 triPlanar(sampler2D tex, vec3 p, vec3 normal, float size) {
     p*=(1.0/size);
@@ -430,7 +437,7 @@ vec2 minID(vec2 res1, vec2 res2) {
     return (res1.x < res2.x) ? res1 : res2;
 }
 
-float getObject(Object object, vec3 pos) {
+float getObjectRaw(Object object, vec3 pos) {
     // 0 = box
     // 1 = sphere
     // 2 = cylinder
@@ -453,6 +460,19 @@ float getObject(Object object, vec3 pos) {
         return fMenger(pos-location, 5, object.i);
     }
     return 0.0;
+}
+
+vec3 getPrimitiveNormal(Object object, vec3 pos) {
+    // choose a VERY small offset
+    const float h = EPSILON;
+    return normalize(vec3(
+    getObjectRaw(object, pos + vec3( h, 0, 0))
+    - getObjectRaw(object, pos - vec3( h, 0, 0)),
+    getObjectRaw(object, pos + vec3( 0, h, 0))
+    - getObjectRaw(object, pos - vec3( 0, h, 0)),
+    getObjectRaw(object, pos + vec3( 0, 0, h))
+    - getObjectRaw(object, pos - vec3( 0, 0, h))
+    ));
 }
 
 // helper for intersection: pick the farthest distance, tracking ID
@@ -595,6 +615,78 @@ vec2 calcSDF(vec3 pos, bool cull) {
     return sceneDist;
 }
 
+// ----------------------------------------------------------------------------
+// sampleDisplacement:
+//    triplanar-blend a height map (R channel) exactly like in triPlanarPBR,
+//    but only return the single, blended height value in [0,1].
+// ----------------------------------------------------------------------------
+float sampleDisplacement(vec3 pos, vec3 N, int heightLayer, float scale) {
+    // 1) transform into height‐map space
+    vec3 pp = pos * (1.0 / scale);
+
+    // 2) compute the same face weights as triPlanarPBR
+    vec3 w = abs(N);
+    w = pow(w, vec3(5.0));
+    w /= (w.x + w.y + w.z);
+
+    // 3) build UVs for each face, with your flips
+    // XY faces (Z axis)
+    vec2 uvXY = pp.xy * 0.5 + 0.5;
+    if (N.z < 0.0) uvXY.x = 1.0 - uvXY.x;
+    uvXY.y = 1.0 - uvXY.y;
+
+    // XZ faces (Y axis)
+    vec2 uvXZ = vec2(pp.x, pp.z) * 0.5 + 0.5;
+    if (N.y < 0.0) uvXZ.x = 1.0 - uvXZ.x;
+
+    // YZ faces (X axis)
+    vec2 uvYZ = vec2(pp.z, pp.y) * 0.5 + 0.5;
+    if (N.x < 0.0) uvYZ.x = 1.0 - uvYZ.x;
+    uvYZ.y = 1.0 - uvYZ.y;
+
+    // 4) sample the R channel from each slice
+    float hXY = texture(textureArray, vec3(uvXY, heightLayer)).r;
+    float hXZ = texture(textureArray, vec3(uvXZ, heightLayer)).r;
+    float hYZ = texture(textureArray, vec3(uvYZ, heightLayer)).r;
+
+    // 5) blend by the weights
+    return hXY * w.z
+    + hXZ * w.y
+    + hYZ * w.x;
+}
+
+
+vec4 getNormal(vec3 pos) {
+    vec2 dist = calcSDF(pos, true);
+    vec2 e = vec2(EPSILON, 0.0);
+
+    vec3 normal = dist.x - vec3(
+    calcSDF(pos-e.xyy, true).x,
+    calcSDF(pos-e.yxy, true).x,
+    calcSDF(pos-e.yyx, true).x);
+
+    return vec4(normalize(normal), dist.y);
+}
+
+float getObject(Object object, vec3 pos) {
+    // 4a) base distance from the raw primitive
+    float d = getObjectRaw(object, pos);
+
+    // 4b) if there's a height map, push the surface along the primitive normal
+    if (object.heightID >= 0) {
+        // numerically computed primitive normal
+        vec3 N = getPrimitiveNormal(object, pos);
+
+        // sample [0..1] → center around zero
+        float h = sampleDisplacement(pos, N, object.heightID, object.textureScale) - 0.5;
+
+        // push the surface outwards by (h * strength)
+        d -= h * DISPLACEMENT_STRENGTH;
+    }
+
+    return d;
+}
+
 float calcAO(vec3 pos, vec3 normal) { //Ambient occlusion
     float occ = 0.0;
     float sca = 1.0;
@@ -643,19 +735,6 @@ float softShadowPCF(vec3 p, vec3 L) {
         sum += calcSoftshadow(p, offsetDir, 0.01, 20.0, 32.0);
     }
     return sum / float(SAMPLES);
-}
-
-
-vec4 getNormal(vec3 pos) {
-    vec2 dist = calcSDF(pos, true);
-    vec2 e = vec2(EPSILON, 0.0);
-
-    vec3 normal = dist.x - vec3(
-    calcSDF(pos-e.xyy, true).x,
-    calcSDF(pos-e.yxy, true).x,
-    calcSDF(pos-e.yyx, true).x);
-
-    return vec4(normalize(normal), dist.y);
 }
 
 float rMarch(vec3 rOrig, vec3 rDir) {
