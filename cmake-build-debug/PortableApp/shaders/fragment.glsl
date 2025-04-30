@@ -124,6 +124,7 @@ vec3           layer    // three slice indices
 }
 
 // New PBR tri-planar mapping with parallax
+// Improved tri-planar mapping for PBR with corrected face orientations
 PBRMaps triPlanarPBR(
 sampler2DArray arr,
 vec3           p,
@@ -140,31 +141,53 @@ vec3           viewDir   // for parallax
     // 1) Transform into texture-space
     vec3 pp = p * (1.0/scale);
 
-    // 2) Compute blend weights
+    // 2) Compute blend weights for smooth transitions between faces
     vec3 w = abs(n);
     w = pow(w, vec3(5.0));
     w /= (w.x + w.y + w.z);
 
-    // 3) UVs per plane
+    // 3) UVs per plane - FIXED for correct orientation
+
     // --- XY plane (+Z/–Z faces) ---
     vec2 uvXY = pp.xy * 0.5 + 0.5;
+    // For front face (+Z), standard UV
+    // For back face (-Z), flip X coordinate
     if (n.z < 0.0) {
         uvXY.x = 1.0 - uvXY.x;
     }
+    // Always flip Y in texture space
     uvXY.y = 1.0 - uvXY.y;
 
     // --- XZ plane (+Y/–Y faces) ---
     vec2 uvXZ = vec2(pp.x, pp.z) * 0.5 + 0.5;
-    if (n.y > 0.0) {
+    // For bottom face (-Y), standard UV
+    // For top face (+Y), flip X coordinate - THIS WAS BACKWARDS!
+    if (n.y < 0.0) { // FIXED: Changed from > to <
         uvXZ.x = 1.0 - uvXZ.x;
     }
 
     // --- YZ plane (+X/–X faces) ---
     vec2 uvYZ = vec2(pp.z, pp.y) * 0.5 + 0.5;
-    if (n.x > 0.0) {
+    // For right face (+X), standard UV
+    // For left face (-X), flip X coordinate
+    if (n.x < 0.0) { // FIXED: Changed from > to <
         uvYZ.x = 1.0 - uvYZ.x;
     }
+    // Always flip Y in texture space
     uvYZ.y = 1.0 - uvYZ.y;
+
+    // 4) Debug weights - uncomment to diagnose face mapping
+    // Output weights as colors to check orientation
+    /*
+    PBRMaps debug;
+    debug.albedo = vec3(w.x, w.y, w.z);
+    debug.normalRGB = vec3(0.5, 0.5, 1.0);
+    debug.metallic = 0.0;
+    debug.roughness = 0.5;
+    debug.ao = 1.0;
+    debug.height = 0.0;
+    return debug;
+    */
 
     // 4) Parallax occlusion on each UV if height map is provided
     if (heightLayer >= 0) {
@@ -233,6 +256,7 @@ vec3 unpackNormal(vec3 rgb) {
 }
 
 // Transform normal from tangent space to world space
+// Targeted fix for triPlanarNormal function
 vec3 triPlanarNormal(
 vec3 geomNormal,
 sampler2DArray arr,
@@ -245,77 +269,97 @@ vec3 viewDir
         return geomNormal;
     }
 
-    vec3 w = abs(geomNormal);
+    // Get absolute normal for face determination
+    vec3 absN = abs(geomNormal);
+
+    // Create weight for face blending
+    vec3 w = absN;
     w = pow(w, vec3(5.0));
     w /= (w.x + w.y + w.z);
 
-    // Create tangent frames for each plane
-    vec3 tangentXY, bitangentXY;
-    vec3 tangentXZ, bitangentXZ;
-    vec3 tangentYZ, bitangentYZ;
-
-    // XY plane (Z normal)
-    if (abs(geomNormal.z) > 0.0) {
-        tangentXY = normalize(vec3(1.0, 0.0, 0.0));
-        bitangentXY = normalize(vec3(0.0, 1.0, 0.0));
-    } else {
-        tangentXY = normalize(vec3(1.0, 0.0, 0.0));
-        bitangentXY = normalize(cross(geomNormal, tangentXY));
-    }
-
-    // XZ plane (Y normal)
-    if (abs(geomNormal.y) > 0.0) {
-        tangentXZ = normalize(vec3(1.0, 0.0, 0.0));
-        bitangentXZ = normalize(vec3(0.0, 0.0, 1.0));
-    } else {
-        tangentXZ = normalize(vec3(1.0, 0.0, 0.0));
-        bitangentXZ = normalize(cross(geomNormal, tangentXZ));
-    }
-
-    // YZ plane (X normal)
-    if (abs(geomNormal.x) > 0.0) {
-        tangentYZ = normalize(vec3(0.0, 1.0, 0.0));
-        bitangentYZ = normalize(vec3(0.0, 0.0, 1.0));
-    } else {
-        tangentYZ = normalize(vec3(0.0, 1.0, 0.0));
-        bitangentYZ = normalize(cross(geomNormal, tangentYZ));
-    }
-
-    // Sample normal map for each face
+    // Transform position to texture space
     vec3 pp = p * (1.0/scale);
 
-    // --- XY plane (+Z/–Z faces) ---
+    // --- FACE 1: XY plane (Z normal) ---
     vec2 uvXY = pp.xy * 0.5 + 0.5;
     if (geomNormal.z < 0.0) {
-        uvXY.x = 1.0 - uvXY.x;
+        uvXY.x = 1.0 - uvXY.x; // Flip for back face
     }
-    uvXY.y = 1.0 - uvXY.y;
+    uvXY.y = 1.0 - uvXY.y; // Flip Y - texture convention
 
-    // --- XZ plane (+Y/–Y faces) ---
+    // --- FACE 2: XZ plane (Y normal) ---
     vec2 uvXZ = vec2(pp.x, pp.z) * 0.5 + 0.5;
-    if (geomNormal.y > 0.0) {
-        uvXZ.x = 1.0 - uvXZ.x;
+    if (geomNormal.y < 0.0) {
+        uvXZ.x = 1.0 - uvXZ.x; // Flip for bottom face
     }
 
-    // --- YZ plane (+X/–X faces) ---
+    // --- FACE 3: YZ plane (X normal) ---
     vec2 uvYZ = vec2(pp.z, pp.y) * 0.5 + 0.5;
-    if (geomNormal.x > 0.0) {
-        uvYZ.x = 1.0 - uvYZ.x;
+    if (geomNormal.x < 0.0) {
+        uvYZ.x = 1.0 - uvYZ.x; // Flip for left face
     }
-    uvYZ.y = 1.0 - uvYZ.y;
+    uvYZ.y = 1.0 - uvYZ.y; // Flip Y - texture convention
 
-    // Sample and unpack normals
-    vec3 nXY = unpackNormal(texture(arr, vec3(uvXY, normalLayer)).rgb);
-    vec3 nXZ = unpackNormal(texture(arr, vec3(uvXZ, normalLayer)).rgb);
-    vec3 nYZ = unpackNormal(texture(arr, vec3(uvYZ, normalLayer)).rgb);
+    // Sample normal maps
+    vec3 tcNormalXY = texture(arr, vec3(uvXY, normalLayer)).rgb;
+    vec3 tcNormalXZ = texture(arr, vec3(uvXZ, normalLayer)).rgb;
+    vec3 tcNormalYZ = texture(arr, vec3(uvYZ, normalLayer)).rgb;
 
-    // Transform from tangent to world space for each plane
-    vec3 worldXY = nXY.x * tangentXY + nXY.y * bitangentXY + nXY.z * vec3(0.0, 0.0, 1.0);
-    vec3 worldXZ = nXZ.x * tangentXZ + nXZ.y * bitangentXZ + nXZ.z * vec3(0.0, 1.0, 0.0);
-    vec3 worldYZ = nYZ.x * tangentYZ + nYZ.y * bitangentYZ + nYZ.z * vec3(1.0, 0.0, 0.0);
+    // Unpack to -1 to 1 range
+    vec3 tanNormalXY = tcNormalXY * 2.0 - 1.0;
+    vec3 tanNormalXZ = tcNormalXZ * 2.0 - 1.0;
+    vec3 tanNormalYZ = tcNormalYZ * 2.0 - 1.0;
 
-    // Blend normals based on original weights
-    return normalize(worldXY * w.z + worldXZ * w.y + worldYZ * w.x);
+    // Create proper tangent spaces for each face
+    // CORRECTED: Fixed the tanget/bitangent orientations
+
+    // For XY plane (Z normal)
+    vec3 zTangent = normalize(vec3(1.0, 0.0, 0.0));
+    vec3 zBitangent = normalize(vec3(0.0, 1.0, 0.0));
+    vec3 zNormal = vec3(0.0, 0.0, sign(geomNormal.z));
+
+    // For XZ plane (Y normal)
+    vec3 yTangent = normalize(vec3(1.0, 0.0, 0.0));
+    vec3 yBitangent = normalize(vec3(0.0, 0.0, 1.0));
+    vec3 yNormal = vec3(0.0, sign(geomNormal.y), 0.0);
+
+    // For YZ plane (X normal)
+    vec3 xTangent = normalize(vec3(0.0, 0.0, 1.0));
+    vec3 xBitangent = normalize(vec3(0.0, 1.0, 0.0));
+    vec3 xNormal = vec3(sign(geomNormal.x), 0.0, 0.0);
+
+    // Convert tangent space normal to world space normal
+    // Using the tangent space basis vectors
+    vec3 worldNormalXY = normalize(
+    tanNormalXY.x * zTangent +
+    tanNormalXY.y * zBitangent +
+    tanNormalXY.z * zNormal
+    );
+
+    vec3 worldNormalXZ = normalize(
+    tanNormalXZ.x * yTangent +
+    tanNormalXZ.y * yBitangent +
+    tanNormalXZ.z * yNormal
+    );
+
+    vec3 worldNormalYZ = normalize(
+    tanNormalYZ.x * xTangent +
+    tanNormalYZ.y * xBitangent +
+    tanNormalYZ.z * xNormal
+    );
+
+    // KEY FIX: Ensure the XY plane (Z normal) is emphasized instead of YZ plane
+    // Swap weighting between X and Z components to prioritize XY plane
+    vec3 fixedWeights = vec3(w.z, w.y, w.x);
+
+    // Combine with weights - using the FIXED weights
+    vec3 finalNormal = normalize(
+    worldNormalXY * fixedWeights.x +
+    worldNormalXZ * fixedWeights.y +
+    worldNormalYZ * fixedWeights.z
+    );
+
+    return finalNormal;
 }
 
 // PBR Functions
@@ -586,6 +630,22 @@ float calcSoftshadow(in vec3 ro, in vec3 rd, float mint, float maxt, float w) {
     return res;
 }
 
+float softShadowPCF(vec3 p, vec3 L) {
+    const int SAMPLES = 8;
+    const float RADIUS = 0.5;    // in world-space
+    float sum = 0.0;
+    // build two orthonormal tangents
+    vec3 T = normalize(cross(abs(L.y) < 0.9 ? vec3(0,1,0) : vec3(1,0,0), L));
+    vec3 B = cross(L, T);
+    for(int i = 0; i < SAMPLES; i++){
+        float theta = 2.0 * 3.14159265 * (float(i) / float(SAMPLES));
+        vec3 offsetDir = normalize(L + (T * cos(theta) + B * sin(theta)) * (RADIUS / length(p - u_camPos)));
+        sum += calcSoftshadow(p, offsetDir, 0.01, 20.0, 32.0);
+    }
+    return sum / float(SAMPLES);
+}
+
+
 vec4 getNormal(vec3 pos) {
     vec2 dist = calcSDF(pos, true);
     vec2 e = vec2(EPSILON, 0.0);
@@ -639,8 +699,8 @@ vec3 getLightPhong(vec3 p, vec3 rd, float id) {
 
     // Fetch the object's color based on its ID
     int objID = int(id);
-    //vec3 color = vec3(visibleObjects[objID].r, visibleObjects[objID].g, visibleObjects[objID].b);
-    vec3 color = vec3(objID/100.0f, 0, 0);
+    vec3 color = vec3(visibleObjects[objID].r, visibleObjects[objID].g, visibleObjects[objID].b);
+    //vec3 color = vec3(objID/100.0f, 0, 0);
 
 
     vec3 specColor = vec3(0.6, 0.5, 0.4);
@@ -660,11 +720,12 @@ vec3 getLightPhong(vec3 p, vec3 rd, float id) {
 }
 
 // PBR lighting calculation
+// PBR lighting calculation with improved dark areas
 vec3 getLightPBR(vec3 p, vec3 rd, float id) {
     // Setup lighting information
     vec3 lightPos = vec3(200.0, 550.0, -250.0);
     vec3 lightColor = vec3(1.0, 0.95, 0.9);
-    float lightIntensity = 200.0;
+    float lightIntensity = 20.0;
 
     // Get the normal at this point
     vec4 normalData = getNormal(p);
@@ -704,7 +765,7 @@ vec3 getLightPBR(vec3 p, vec3 rd, float id) {
     geomNormal;
 
     // Shadow calculation
-    float shadow = calcSoftshadow(p, L, 0.01, 20.0, 16.0);
+    float shadow = calcSoftshadow(p, L, 0.01, 20.0, 0.8);
 
     // Calculate Cook-Torrance lighting
     vec3 H = normalize(V + L);
@@ -714,14 +775,34 @@ vec3 getLightPBR(vec3 p, vec3 rd, float id) {
     vec3 Lo = cookTorrance(N, V, L, maps.albedo, maps.metallic, maps.roughness, maps.ao*calcAO(p, N));
     Lo *= radiance;
 
-    // Ambient lighting
-    vec3 ambient = vec3(0.03) * maps.albedo * maps.ao * calcAO(p, N);
+    // Calculate geometric AO
+    float geometricAO = calcAO(p, N);
 
-    // Final color
-    vec3 color = ambient + Lo * shadow;
+    // --- IMPROVEMENTS FOR DARK AREAS ---
 
-    // Apply tone mapping (optional)
-    color = color / (color + vec3(1.0));
+    // 1. Improved ambient lighting with hemisphere approach
+    vec3 skyColor = vec3(0.5, 0.7, 1.0);
+    vec3 groundColor = vec3(0.1, 0.1, 0.1);
+    float hemiMix = 0.5 * (N.y + 1.0); // -1 to 1 mapped to 0 to 1
+    vec3 hemiLight = mix(groundColor, skyColor, hemiMix);
+    vec3 ambient = hemiLight * maps.albedo * maps.ao * geometricAO * 0.2; // Increased from 0.01 to 0.2
+
+    // 2. Add rim lighting (edge highlight effect)
+    float rimFactor = 1.0 - max(dot(N, V), 0.0);
+    rimFactor = pow(rimFactor, 3.0) * 0.15; // Adjust power and intensity
+    vec3 rim = rimFactor * lightColor * maps.albedo;
+
+    // 3. Add bounce light simulation from the ground/nearby surfaces
+    vec3 groundBounce = vec3(0.3, 0.2, 0.1) * maps.albedo * max(0.0, -N.y) * 0.1;
+
+    // 4. Add subtle fill light from opposite direction to main light
+    vec3 fillLight = maps.albedo * max(0.0, -dot(N, L)) * 0.1;
+
+    // Combine all lighting terms
+    vec3 color = ambient + Lo * shadow + rim + groundBounce + fillLight;
+
+    // Energy conservation - make sure we're not adding too much light
+    color = min(color, maps.albedo * 2.0);
 
     return color;
 }
@@ -753,6 +834,11 @@ vec3 rCam(vec2 offset) {
     intersection = center + uv.x*right + uv.y*up,
     dir = normalize(intersection);
     return dir;
+}
+
+vec3 ACESFilmicTone(vec3 x) {
+    const float A=2.51, B=0.03, C=2.43, D=0.59, E=0.14;
+    return clamp((x*(A*x+B)) / (x*(C*x+D)+E), 0.0, 1.0);
 }
 
 void main() {
@@ -796,6 +882,12 @@ void main() {
         float t = 0.5 * (rayDir.y + 1.0);
         color = mix(vec3(1.0), vec3(0.5, 0.7, 1.0), t);
     }
+
+    color = ACESFilmicTone(color);
+
+    // 3) add micro-dither to suppress any residual posterization
+    float d = (fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233))) * 43758.5453) - 0.5) / 255.0;
+    color += d;
 
     // Gamma correction
     color = pow(color, vec3(1.0/2.2));
