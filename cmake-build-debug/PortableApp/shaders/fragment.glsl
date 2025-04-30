@@ -639,20 +639,24 @@ vec3 getLightPhong(vec3 p, vec3 rd, float id) {
 
     // Fetch the object's color based on its ID
     int objID = int(id);
-    vec3 color = getMaterial(p, N.w, N.xyz);
+    //vec3 color = vec3(visibleObjects[objID].r, visibleObjects[objID].g, visibleObjects[objID].b);
+    vec3 color = vec3(objID/100.0f, 0, 0);
+
 
     vec3 specColor = vec3(0.6, 0.5, 0.4);
     vec3 specular = 1.3 * specColor * pow(clamp(dot(R, V), 0.0, 1.0), 10.0);
-    vec3 diffuse = color * clamp(dot(N.xyz, L), 0.0, 1.0);
-    vec3 ambient = color * 0.05;
+    vec3 diffuse = 0.9 * color * clamp(dot(L, N.xyz), 0.0, 1.0);
+    vec3 ambient = 0.05 * color;
+    vec3 fresnel = 0.15 * color * pow(1.0 + dot(rd, N.xyz), 3.0);
 
-    // Shadow calculation
-    float shadow = calcSoftshadow(p, L, 0.01, 20.0, 16.0);
+    // shadows
+    float shadow = calcSoftshadow(p, L, 0.01, 100.0, 0.01);
+    // occ
+    float occ = calcAO(p,N.xyz);
+    // back
+    vec3 back = 0.05 * color * clamp(dot(N.xyz, -L), 0.0, 1.0);
 
-    // Ambient occlusion
-    float ao = calcAO(p, N.xyz);
-
-    return ambient * ao + (diffuse + specular) * shadow;
+    return  (back + ambient + fresnel) * occ + (specular * occ + diffuse) * shadow;
 }
 
 // PBR lighting calculation
@@ -707,7 +711,7 @@ vec3 getLightPBR(vec3 p, vec3 rd, float id) {
     vec3 radiance = lightColor * lightIntensity * max(dot(N, L), 0.0);
 
     // Calculate Cook-Torrance BRDF
-    vec3 Lo = cookTorrance(N, V, L, maps.albedo, maps.metallic, maps.roughness, maps.ao);
+    vec3 Lo = cookTorrance(N, V, L, maps.albedo, maps.metallic, maps.roughness, maps.ao*calcAO(p, N));
     Lo *= radiance;
 
     // Ambient lighting
