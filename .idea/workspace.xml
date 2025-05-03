@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="BackendCodeEditorMiscSettings">
-    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
-    <option name="/Default/Housekeeping/GlobalSettingsUpgraded/IsUpgraded/@EntryValue" value="true" type="bool" />
     <option name="/Default/RiderDebugger/RiderRestoreDecompile/RestoreDecompileSetting/@EntryValue" value="false" type="bool" />
+    <option name="/Default/Housekeeping/GlobalSettingsUpgraded/IsUpgraded/@EntryValue" value="true" type="bool" />
+    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
   </component>
   <component name="CMakePresetLoader">{
   &quot;useNewFormat&quot;: true
@@ -31,9 +31,113 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Added displacement strength for bump maps.">
+      <change afterPath="$PROJECT_DIR$/shaders/common.glsl" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shaders/lighting.glsl" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shaders/mapping.glsl" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shaders/sdf.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Archive/old_main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Archive/old_main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/cache-v2-1db3ddbeefb33fa0e0ff.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/cmakeFiles-v1-2771c8ecc497f1d12acd.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/codemodel-v2-8b1f10f21fc25c07f510.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/index-2025-04-30T18-29-56-0369.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/target-glad-Debug-f0d87cbe128fff1eb4a6.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/target-opengl-mingw-boilerplate-Debug-a493e06d8787424333cd.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/toolchains-v1-9ac4d22760674d1d5e76.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeCache.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeCCompiler.cmake" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeCXXCompiler.cmake" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeDetermineCompilerABI_C.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeDetermineCompilerABI_CXX.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeRCCompiler.cmake" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CMakeSystem.cmake" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CompilerIdC/CMakeCCompilerId.c" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CompilerIdC/a.exe" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CompilerIdCXX/CMakeCXXCompilerId.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/3.31.6/CompilerIdCXX/a.exe" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/CMakeConfigureLog.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/CMakeConfigureLog.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TargetDirectories.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TargetDirectories.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-Debug-log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-Debug-log.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-environment.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-environment.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/glad.dir/external/glad/src/glad.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/glad.dir/external/glad/src/glad.c.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Camera.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Camera.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/InputManager.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/InputManager.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/RayMarcher.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/RayMarcher.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Shader.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Shader.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/ShaderPreprocessor.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/ShaderPreprocessor.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Texture.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Texture.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Utilities.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Utilities.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Window.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Window.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/rules.ninja" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/rules.ninja" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/fragment.glsl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/vertex.glsl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/chiseled-cobble_albedo.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/chiseled-cobble_ao.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/chiseled-cobble_height.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/chiseled-cobble_metallic.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/chiseled-cobble_normal-ogl.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/chiseled-cobble_roughness.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/grassTop.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/hammered-gold_albedo.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/hammered-gold_ao.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/hammered-gold_height.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/hammered-gold_metallic.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/hammered-gold_normal-ogl.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/hammered-gold_roughness.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/patchy-meadow1_albedo.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/patchy-meadow1_ao.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/patchy-meadow1_height.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/patchy-meadow1_metallic.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/patchy-meadow1_normal-ogl.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/patchy-meadow1_roughness.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/sideLog.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/test.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/textures/topLog.png" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/fragment.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/build.ninja" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/build.ninja" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/cmake_install.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/cmake_install.cmake" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/libglad.a" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/libglad.a" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/Globals.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/Globals.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/Object.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/Object.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/Texture.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/Texture.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shaders/fragment.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/render.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shaders/vertex.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/window.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Application.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Application.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Globals.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Globals.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Object.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Texture.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Texture.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/chiseled-cobble_albedo.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/chiseled-cobble/chiseled-cobble_albedo.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/chiseled-cobble_ao.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/chiseled-cobble/chiseled-cobble_ao.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/chiseled-cobble_height.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/chiseled-cobble/chiseled-cobble_height.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/chiseled-cobble_metallic.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/chiseled-cobble/chiseled-cobble_metallic.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/chiseled-cobble_normal-ogl.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/chiseled-cobble/chiseled-cobble_normal-ogl.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/chiseled-cobble_roughness.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/chiseled-cobble/chiseled-cobble_roughness.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/grassTop.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/hammered-gold_albedo.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/hammered-gold/hammered-gold_albedo.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/hammered-gold_ao.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/hammered-gold/hammered-gold_ao.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/hammered-gold_height.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/hammered-gold/hammered-gold_height.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/hammered-gold_metallic.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/hammered-gold/hammered-gold_metallic.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/hammered-gold_normal-ogl.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/hammered-gold/hammered-gold_normal-ogl.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/hammered-gold_roughness.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/hammered-gold/hammered-gold_roughness.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/patchy-meadow1_albedo.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/patchy-meadow1/patchy-meadow1_albedo.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/patchy-meadow1_ao.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/patchy-meadow1/patchy-meadow1_ao.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/patchy-meadow1_height.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/patchy-meadow1/patchy-meadow1_height.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/patchy-meadow1_metallic.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/patchy-meadow1/patchy-meadow1_metallic.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/patchy-meadow1_normal-ogl.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/patchy-meadow1/patchy-meadow1_normal-ogl.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/patchy-meadow1_roughness.png" beforeDir="false" afterPath="$PROJECT_DIR$/textures/patchy-meadow1/patchy-meadow1_roughness.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/sideLog.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/test.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/textures/topLog.png" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,10 +148,17 @@
     <option name="formatViaClangd" value="false" />
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="shader-template" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="fucked-up-bump" />
+        <entry key="$PROJECT_DIR$" value="master" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -65,16 +176,11 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/include/Application.h" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/kylez/CLionProjects/Sangatsu/include/Object.h" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/include/Application.h" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/include/Object.h" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/include/Shader.h" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/kylez/CLionProjects/Sangatsu/include/Shader.h" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/include/ShaderPreprocessor.h" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/include/Texture.h" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/kylez/CLionProjects/Sangatsu/src/Object.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/kylez/CLionProjects/Sangatsu/src/Shader.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/kylez/CLionProjects/Sangatsu/src/ShaderPreprocessor.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/include/Texture.h" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="ProjectApplicationVersion">
     <option name="ide" value="CLion" />
@@ -122,8 +228,19 @@
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\kylez\CLionProjects\Sangatsu\textures" />
     </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\kylez\Sangatsu\textures" />
+      <recent name="C:\Users\kylez\Sangatsu\textures\patchy-meadow1" />
+      <recent name="C:\Users\kylez\Sangatsu\textures\hammered-gold" />
+      <recent name="C:\Users\kylez\Sangatsu\textures\chiseled-cobble" />
+    </key>
   </component>
   <component name="RunManager" selected="CMake Application.Package">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="opengl-mingw-boilerplate" type="CMakeListConfigurationType" factoryName="CMakeListConfigurationFactory" temporary="true">
       <method v="2" />
     </configuration>

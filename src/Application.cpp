@@ -78,40 +78,14 @@ Application::Application(int w, int h, const char* t) {
 
     // 5) Load shaders, textures, SSBO, ray-marcher
     _shader = std::make_unique<Shader>(
-        (std::string(SHADERS_DIR) + "/vertex.glsl").c_str(),
-        (std::string(SHADERS_DIR) + "/fragment.glsl").c_str()
+        (std::string(SHADERS_DIR) + "/window.glsl").c_str(),
+        (std::string(SHADERS_DIR) + "/render.glsl").c_str()
     );
 
-    std::vector layers = {
-        // std::string(TEXTURES_DIR) + "/test.png",
-        // std::string(TEXTURES_DIR) + "/sideLog.png",
-        // std::string(TEXTURES_DIR) + "/topLog.png",
-        // std::string(TEXTURES_DIR) + "/grassTop.png",
-        std::string(TEXTURES_DIR) + "/chiseled-cobble_albedo.png",
-        std::string(TEXTURES_DIR) + "/chiseled-cobble_normal-ogl.png",
-        std::string(TEXTURES_DIR) + "/chiseled-cobble_metallic.png",
-        std::string(TEXTURES_DIR) + "/chiseled-cobble_roughness.png",
-        std::string(TEXTURES_DIR) + "/chiseled-cobble_ao.png",
-        std::string(TEXTURES_DIR) + "/chiseled-cobble_height.png",
-        std::string(TEXTURES_DIR) + "/hammered-gold_albedo.png",
-        std::string(TEXTURES_DIR) + "/hammered-gold_normal-ogl.png",
-        std::string(TEXTURES_DIR) + "/hammered-gold_metallic.png",
-        std::string(TEXTURES_DIR) + "/hammered-gold_roughness.png",
-        std::string(TEXTURES_DIR) + "/hammered-gold_ao.png",
-        std::string(TEXTURES_DIR) + "/hammered-gold_height.png",
-        std::string(TEXTURES_DIR) + "/patchy-meadow1_albedo.png",
-        std::string(TEXTURES_DIR) + "/patchy-meadow1_normal-ogl.png",
-        std::string(TEXTURES_DIR) + "/patchy-meadow1_metallic.png",
-        std::string(TEXTURES_DIR) + "/patchy-meadow1_roughness.png",
-        std::string(TEXTURES_DIR) + "/patchy-meadow1_ao.png",
-        std::string(TEXTURES_DIR) + "/patchy-meadow1_height.png",
-    };
-    _texture = std::make_unique<Texture>(layers);
+    _texture = std::make_unique<Texture>(
+        std::string(TEXTURES_DIR), true
+    );
     _texture->bind(0);
-
-    // _texture = std::make_unique<Texture>(
-    //     std::string(TEXTURES_DIR) + "/test.png"
-    // );
 
     // initial voxel list
     _objects = {
@@ -120,11 +94,12 @@ Application::Application(int w, int h, const char* t) {
         Object({0, 10, 0}, glm::vec3(0.5f), 10, {0, 1, 0}),
         Object({5, 5, 6}, glm::vec3(0.5f), 1, {0, 0, 1}, 1, 0.5, 1),
         Object({6, 5, 6}, glm::vec3(0.5f), 0, {1, 1, 0}, 1, 0.5, 0),
-        Object({0, 0, 0}, {10,0.5,10}, 0, 1, 12, 13, 14, 15, 16, 17, 1.0f, 0.001f),
+        Object({0, 0, 0}, {10,0.5,10}, 0, 1, "patchy-meadow1", *_texture, 1.0f, 0.001f),
+        Object({7,7,7}, glm::vec3(0.5), 1, 1, "vertical-streak-cliff", *_texture, 0.25f, 0.01f),
         Object({1.4, 1, 1}, glm::vec3(0.1f), 1, {0.761, 0, 1}, 5, 0.3f, 1),
         Object({1, 1, 1}, glm::vec3(0.5f), 0, {0.7, 0, 1}, 5, 0.3f),
-        Object({3.2, 4, 4}, glm::vec3(0.5f), 0, 1, 0, 1, 2, 3, 4, 5, 0.25f, 0.1f, 1, 0.5, 1),
-        Object({4, 4, 4}, glm::vec3(0.5f), 1, 1, 6,7,8,9,10,11, 0.25f, 0.0001f, 1, 0.5, 0),
+        Object({3.2, 4, 4}, glm::vec3(0.5f), 0, 1, "chiseled-cobble", *_texture, 0.25f, 0.1f, 1, 0.5, 1),
+        Object({4, 4, 4}, glm::vec3(0.5f), 1, 1, "hammered-gold", *_texture, 0.25f, 0.0001f, 1, 0.5, 0),
     };
     // for (int i = 0; i < 8; i++) {
     //     for (int j = 0; j < 8; j++) {

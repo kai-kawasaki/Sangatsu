@@ -76,7 +76,7 @@ Object::Object(glm::vec3 position, glm::vec3 scale, int objectType, int textureX
 
 }
 
-Object::Object(glm::vec3 position, glm::vec3 scale, int objectType, int materialID, int albedoID, int normalID, int metallicID, int roughnessID, int aoID, int heightID, float textureScale, float displacementStrength, int operation, float blendRadius, int groupLength)
+Object::Object(glm::vec3 position, glm::vec3 scale, int objectType, int materialID, std::string texture, Texture &textures, float textureScale, float displacementStrength, int operation, float blendRadius, int groupLength)
     : position(position)
     , color(glm::vec3(0))
     , scale(scale)
@@ -89,13 +89,19 @@ Object::Object(glm::vec3 position, glm::vec3 scale, int objectType, int material
     , textureXZ(0)
     , textureYZ(0)
     , textureScale(textureScale)
-    , albedoID(albedoID)
-    , normalID(normalID)
-    , metallicID(metallicID)
-    , roughnessID(roughnessID)
-    , aoID(aoID)
-    , heightID(heightID)
+    // , albedoID(albedoID)
+    // , normalID(normalID)
+    // , metallicID(metallicID)
+    // , roughnessID(roughnessID)
+    // , aoID(aoID)
+    // , heightID(heightID)
     , displacementStrength(displacementStrength)
 {
+    albedoID = textures.getTextureID(texture + "_albedo");
+    normalID = textures.getTextureID(texture + "_normal");
+    metallicID = textures.getTextureID(texture + "_metallic");
+    roughnessID = textures.getTextureID(texture + "_roughness");
+    aoID = textures.getTextureID(texture + "_ao");
+    heightID = textures.getTextureID(texture + "_height");
 }
 

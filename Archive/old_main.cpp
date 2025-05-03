@@ -386,7 +386,7 @@
 //     // Load image
 //     loadTexture("../../textures/test.png", testTexture);
 //
-//     program = createShaderProgram("../../shaders/vertex.glsl", "../../shaders/fragment.glsl");
+//     program = createShaderProgram("../../shaders/window.glsl", "../../shaders/render.glsl");
 //     glUseProgram(program);
 //
 //     //glUniform1i(glGetUniformLocation(program, "u_textureTest"), 0);

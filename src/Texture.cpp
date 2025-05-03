@@ -24,6 +24,8 @@ Texture::Texture(const std::string &filePath)
 : Texture(std::vector<std::string>{filePath})
 { }
 
+
+
 // Array ctor
 Texture::Texture(const std::vector<std::string> &filePaths) {
     if (filePaths.empty()) {
@@ -31,6 +33,62 @@ Texture::Texture(const std::vector<std::string> &filePaths) {
         return;
     }
 
+    _texturePaths = filePaths;
+
+    bindPaths(filePaths);
+}
+
+Texture::Texture(const std::string &directory, bool recursive) {
+    try {
+        if (recursive) {
+            for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) {
+                if (entry.is_regular_file()) {
+                    _texturePaths.push_back(entry.path().string());
+                }
+            }
+        } else {
+            for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+                if (entry.is_regular_file()) {
+                    _texturePaths.push_back(entry.path().string());
+                }
+            }
+        }
+
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Error accessing directory: " << e.what() << '\n';
+    }
+
+    if (_texturePaths.empty()) {
+        std::cerr << "Texture array: no file paths found in directory\n";
+        return;
+    }
+
+    bindPaths(_texturePaths);
+}
+
+
+Texture::~Texture() {
+    if (_textureID) {
+        glDeleteTextures(1, &_textureID);
+    }
+}
+
+int Texture::getTextureID(const std::string& fileName) const {
+    for (size_t i = 0; i < _texturePaths.size(); ++i) {
+        if (_texturePaths[i].find(fileName) != std::string::npos) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+void Texture::bind(GLuint unit) const {
+    glActiveTexture(GL_TEXTURE0 + unit);
+    // if it's a single image, it's still in a 2D_ARRAY with 1 layer
+    glBindTexture(GL_TEXTURE_2D_ARRAY, _textureID);
+}
+
+void Texture::bindPaths(const std::vector<std::string>& filePaths) {
     // First, load the first image to get dimensions
     int w, h, channels;
     unsigned char* firstImg = SOIL_load_image(
@@ -88,19 +146,6 @@ Texture::Texture(const std::vector<std::string> &filePaths) {
     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
-
-Texture::~Texture() {
-    if (_textureID) {
-        glDeleteTextures(1, &_textureID);
-    }
-}
-
-void Texture::bind(GLuint unit) const {
-    glActiveTexture(GL_TEXTURE0 + unit);
-    // if it's a single image, it's still in a 2D_ARRAY with 1 layer
-    glBindTexture(GL_TEXTURE_2D_ARRAY, _textureID);
-}
-
 
 // Texture::Texture(const std::string &filePath) {
 //     glGenTextures(1,&_textureID);
