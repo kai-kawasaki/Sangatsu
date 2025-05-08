@@ -1,3 +1,9 @@
 # Ignore content built with CMake
 build/
-.idea
+# IntelliJ IDEA files
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
