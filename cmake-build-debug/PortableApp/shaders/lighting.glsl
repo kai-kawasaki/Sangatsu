@@ -67,7 +67,7 @@ vec3 getMaterial(vec3 p, float id, vec3 normal) {
 }
 
 vec3 getLightPhong(vec3 p, vec3 rd, float id) {
-    vec3 lightPos = vec3(200.0, 550.0, -250.0);
+    vec3 lightPos = u_lightPos;
     vec3 L = normalize(lightPos - p);
     vec4 N = getNormal(p);
     vec3 V = -rd;
@@ -161,7 +161,7 @@ vec3 cookTorrance(vec3 N, vec3 V, vec3 L, vec3 albedo, float metallic, float rou
 // PBR lighting calculation
 vec3 getLightPBR(vec3 p, vec3 rd, float id) {
     // Setup lighting information
-    vec3 lightPos = vec3(200.0, 550.0, -250.0);
+    vec3 lightPos = u_lightPos;
     vec3 lightColor = vec3(1.0, 0.95, 0.9);
     float lightIntensity = 20.0;
 

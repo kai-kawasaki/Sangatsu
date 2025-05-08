@@ -94,7 +94,7 @@ Application::Application(int w, int h, const char* t) {
         Object({0, 10, 0}, glm::vec3(0.5f), 10, {0, 1, 0}),
         Object({5, 5, 6}, glm::vec3(0.5f), 1, {0, 0, 1}, 1, 0.5, 1),
         Object({6, 5, 6}, glm::vec3(0.5f), 0, {1, 1, 0}, 1, 0.5, 0),
-        Object({0, 0, 0}, {10,0.5,10}, 0, 1, "patchy-meadow1", *_texture, 1.0f, 0.001f),
+        Object({0, 0, 0}, {10,0.5,10}, 0, 1, "patchy-meadow1", *_texture, 0.75f, 0.001f),
         Object({7,7,7}, glm::vec3(0.5), 1, 1, "vertical-streak-cliff", *_texture, 0.25f, 0.01f),
         Object({1.4, 1, 1}, glm::vec3(0.1f), 1, {0.761, 0, 1}, 5, 0.3f, 1),
         Object({1, 1, 1}, glm::vec3(0.5f), 0, {0.7, 0, 1}, 5, 0.3f),
@@ -227,7 +227,15 @@ void Application::loop() {
 
         _ssbo->updateIndices(_visibleIndices, _frameIndex);
 
-        // ——— Render ———
+        // Calculate sun position with circular motion
+        float sunRadius = 500.0f; // Distance from origin
+        float angleRadians = static_cast<float>(cur * (2.0f * M_PI / 120.0f)); // Full rotation in 120 seconds
+        glm::vec3 sunPosition = glm::vec3(
+            sunRadius * std::cos(angleRadians),
+            sunRadius * std::sin(angleRadians),
+            0.0f
+        );
+
         _rayMarcher->render(
             static_cast<float>(w),
             static_cast<float>(h),
@@ -238,6 +246,7 @@ void Application::loop() {
             flashlightOn,
             renderMode,
             0,
+            sunPosition, // Use the calculated sun position
             _visibleIndices.size()
         );
 

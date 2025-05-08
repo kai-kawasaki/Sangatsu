@@ -39,6 +39,7 @@ uniform vec3 u_camTarget;
 uniform int u_flashlight;
 uniform int u_renderMode;
 uniform int u_countObjects;
+uniform vec3 u_lightPos;
 
 uniform sampler2DArray textureArray;
 

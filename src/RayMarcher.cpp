@@ -41,6 +41,7 @@ void RayMarcher::render(const float width, const float height,
                         const bool flashlightOn,
                         const int renderMode,
                         const GLuint textureID,
+                        const glm::vec3& lightPos,
                         const int countObjects) const {
     _shader.use();
     glUniform2f(glGetUniformLocation(_shader.id(),"u_resolution"), width, height);
@@ -53,6 +54,7 @@ void RayMarcher::render(const float width, const float height,
     glUniform1i(glGetUniformLocation(_shader.id(),"u_flashlight"), flashlightOn);
     glUniform1i(glGetUniformLocation(_shader.id(),"u_renderMode"), renderMode);
     glUniform1i(glGetUniformLocation(_shader.id(),"u_countObjects"), countObjects);
+    glUniform3fv(glGetUniformLocation(_shader.id(),"u_lightPos"), 1, glm::value_ptr(lightPos));
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureID);
