@@ -223,7 +223,7 @@ vec3 getLightPBR(vec3 p, vec3 rd, float id) {
     vec3 groundColor = vec3(0.1, 0.1, 0.1);
     float hemiMix = 0.5 * (N.y + 1.0); // -1 to 1 mapped to 0 to 1
     vec3 hemiLight = mix(groundColor, skyColor, hemiMix);
-    vec3 ambient = hemiLight * maps.albedo * maps.ao * geometricAO * 0.2; // Increased from 0.01 to 0.2
+    vec3 ambient = hemiLight * maps.albedo * maps.ao * geometricAO * 0.01; // Increased from 0.01 to 0.2
 
     // 2. Add rim lighting (edge highlight effect)
     float rimFactor = 1.0 - max(dot(N, V), 0.0);

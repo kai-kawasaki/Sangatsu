@@ -98,7 +98,7 @@ Application::Application(int w, int h, const char* t) {
         Object({7,7,7}, glm::vec3(0.5), 1, 1, "vertical-streak-cliff", *_texture, 0.25f, 0.01f),
         Object({1.4, 1, 1}, glm::vec3(0.1f), 1, {0.761, 0, 1}, 5, 0.3f, 1),
         Object({1, 1, 1}, glm::vec3(0.5f), 0, {0.7, 0, 1}, 5, 0.3f),
-        Object({3.2, 4, 4}, glm::vec3(0.5f), 0, 1, "chiseled-cobble", *_texture, 0.25f, 0.1f, 1, 0.5, 1),
+        Object({3.2, 4, 4}, glm::vec3(0.5f), 0, 1, "chiseled-cobble", *_texture, 0.25f, 0.2f, 1, 0.5, 1),
         Object({4, 4, 4}, glm::vec3(0.5f), 1, 1, "hammered-gold", *_texture, 0.25f, 0.0001f, 1, 0.5, 0),
     };
     // for (int i = 0; i < 8; i++) {
@@ -110,6 +110,8 @@ Application::Application(int w, int h, const char* t) {
     _ssbo       = std::make_unique<SSBOManager>(_objects);
     _rayMarcher = std::make_unique<RayMarcher>(*_shader);
     _rayMarcher->init();
+    _fbo = std::make_unique<FBOManager>(w, h);
+    _fbo->bind();
 
     // ——— Disable culling: render all objects ———
     // _visibleIndices.resize(_objects.size());
@@ -119,6 +121,7 @@ Application::Application(int w, int h, const char* t) {
     _camPos   = glm::vec3(0.0f, 2.0f, -4.0f);
     _camera->setPosition(_camPos);
     _prevTime = glfwGetTime();
+    glViewport(0, 0, w, h);
 }
 
 void Application::run() {
@@ -136,7 +139,6 @@ void Application::loop() {
         // Frame setup
         int w, h;
         glfwGetFramebufferSize(win, &w, &h);
-        glViewport(0, 0, w, h);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // ——— Movement based on glfwGetKey ———
@@ -236,9 +238,17 @@ void Application::loop() {
             0.0f
         );
 
+        int windowW, windowH;
+        glfwGetWindowSize(win, &windowW, &windowH);
+
+        _fbo->bind();
+        int fbW = _fbo->getWidth();
+        int fbH = _fbo->getHeight();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         _rayMarcher->render(
-            static_cast<float>(w),
-            static_cast<float>(h),
+            static_cast<float>(fbW),
+            static_cast<float>(fbH),
             static_cast<float>(cur),
             _scrollOffset,
             _camera->position(),
@@ -249,6 +259,20 @@ void Application::loop() {
             sunPosition, // Use the calculated sun position
             _visibleIndices.size()
         );
+
+        _fbo->unbind();
+        glDrawBuffer(GL_BACK);
+        glUseProgram(0);
+        glViewport(0, 0, windowW, windowH);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->getFBO());
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, fbW, fbH, 0, 0, windowW, windowH,
+                          GL_COLOR_BUFFER_BIT,
+                          GL_NEAREST);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         glfwSwapBuffers(win);
         glfwPollEvents();

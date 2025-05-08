@@ -24,6 +24,7 @@ class Window {
     private:
         GLFWwindow* _win;
         static void error_callback(int error, const char* description);
+        static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 };
 
 #endif //WINDOW_H

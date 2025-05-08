@@ -31,6 +31,7 @@ Window::Window(int width, int height, const char* title) {
         std::exit(EXIT_FAILURE);
     }
 
+    glfwSetFramebufferSizeCallback(_win, framebuffer_size_callback);
     glfwMakeContextCurrent(_win);
 }
 
@@ -57,4 +58,9 @@ GLFWwindow* Window::handle() const {
 
 void Window::error_callback(int, const char* description) {
     fprintf(stderr, "Error: %s\n", description);
+}
+
+void Window::framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    // glViewport(0, 0, width, height);
+    return;
 }

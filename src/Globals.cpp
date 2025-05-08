@@ -6,6 +6,6 @@
 
 bool flashlightOn = false;
 int renderMode = 1;
-int widthG = 1080;
-int heightG = 720;
+int widthG = 960;
+int heightG = 540;
 const int FRAMES_IN_FLIGHT = 5;

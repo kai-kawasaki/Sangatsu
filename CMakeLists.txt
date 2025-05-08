@@ -44,7 +44,11 @@ add_executable(${PROJECT_NAME} ${SOURCES}
         src/RayMarcher.cpp
         src/Utilities.cpp
         include/Globals.h
-        src/Globals.cpp)
+        src/Globals.cpp
+        include/BVH.h
+        include/FBOManager.h
+        src/FBOManager.cpp
+)
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 

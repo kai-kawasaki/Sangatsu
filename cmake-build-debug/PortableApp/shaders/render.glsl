@@ -310,8 +310,8 @@ void main() {
     }
 
     // 3) add micro-dither to suppress any residual posterization
-    float d = (fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233))) * 43758.5453) - 0.5) / 255.0;
-    color += d;
+//    float d = (fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233))) * 43758.5453) - 0.5) / 255.0;
+//    color += d;
 
     // Gamma correction
     color = pow(color, vec3(1.0/2.2));

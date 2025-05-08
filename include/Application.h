@@ -18,6 +18,7 @@
 #include "SSBOManager.h"
 #include "RayMarcher.h"
 #include <memory>
+#include "FBOManager.h"
 
 class Application {
 public:
@@ -35,6 +36,7 @@ private:
     std::unique_ptr<Texture>     _texture;
     std::unique_ptr<Camera>      _camera;
     std::unique_ptr<SSBOManager> _ssbo;
+    std::unique_ptr<FBOManager> _fbo;
     std::unique_ptr<RayMarcher>  _rayMarcher;
 
     std::vector<Object> _objects;
