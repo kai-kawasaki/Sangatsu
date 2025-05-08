@@ -11,7 +11,7 @@
 #include "SSBOManager.h"
 #include "RayMarcher.h"
 
-#include <glad/glad.h>
+#include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -28,15 +28,33 @@ static constexpr float kMaxTraceDistance   = 100.0f;
 static constexpr float kHalfSize           = 0.865f;
 static constexpr float kRadius             = glm::sqrt(3.0f) * kHalfSize;
 
+void logOpenGLInfo() {
+    const GLubyte* vendor = glGetString(GL_VENDOR);
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    const GLubyte* version = glGetString(GL_VERSION);
+
+    std::cout << "Vendor: " << vendor << std::endl;
+    std::cout << "Renderer: " << renderer << std::endl;
+    std::cout << "OpenGL Version: " << version << std::endl;
+}
+
 Application::Application(int w, int h, const char* t) {
+    //set openGL version
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
     // 1) Create window & make its context current
     _window = std::make_unique<Window>(w, h, t);
 
     // 2) Load GLAD
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    if (!gladLoaderLoadGL()) {
         std::cerr << "ERROR: Failed to initialize GLAD\n";
         std::exit(EXIT_FAILURE);
     }
+
+    // Log OpenGL information
+    logOpenGLInfo();
 
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);

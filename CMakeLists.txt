@@ -64,10 +64,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
 target_compile_definitions(${PROJECT_NAME} PRIVATE "GLFW_INCLUDE_NONE")
 
 # GLAD
-add_library("glad" "${GLAD_DIR}/src/glad.c")
-target_include_directories("glad" PRIVATE "${GLAD_DIR}/include")
-target_include_directories(${PROJECT_NAME} PRIVATE "${GLAD_DIR}/include")
-target_link_libraries(${PROJECT_NAME} "glad" "${CMAKE_DL_LIBS}")
+add_library(glad STATIC "${GLAD_DIR}/src/gl.c")
+target_include_directories(glad PUBLIC "${GLAD_DIR}/include")
+target_link_libraries(${PROJECT_NAME} glad ${CMAKE_DL_LIBS})
 
 # GLM
 target_include_directories(${PROJECT_NAME} PRIVATE "${GLM_DIR}")

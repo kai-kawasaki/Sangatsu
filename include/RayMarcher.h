@@ -8,7 +8,7 @@
 #pragma once
 #include "Shader.h"
 #include "Vertex.h"
-#include <glad/glad.h>
+#include <glad/gl.h>
 
 class RayMarcher {
 public:

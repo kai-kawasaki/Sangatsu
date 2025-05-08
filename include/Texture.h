@@ -6,7 +6,7 @@
 #define TEXTURE_H
 
 #pragma once
-#include <glad/glad.h>
+#include <glad/gl.h>
 #include <string>
 #include <vector>
 #include <filesystem>

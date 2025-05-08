@@ -6,7 +6,7 @@
 #define SHADER_H
 
 #pragma once
-#include <glad/glad.h>
+#include <glad/gl.h>
 #include <string>
 
 class Shader {
