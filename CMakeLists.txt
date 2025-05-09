@@ -48,6 +48,7 @@ add_executable(${PROJECT_NAME} ${SOURCES}
         include/BVH.h
         include/FBOManager.h
         src/FBOManager.cpp
+        src/BVH.cpp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)

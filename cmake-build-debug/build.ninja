@@ -57,6 +57,14 @@ build CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj: CXX_COMPI
   OBJECT_DIR = CMakeFiles\opengl-mingw-boilerplate.dir
   OBJECT_FILE_DIR = CMakeFiles\opengl-mingw-boilerplate.dir\src
 
+build CMakeFiles/opengl-mingw-boilerplate.dir/src/BVH.cpp.obj: CXX_COMPILER__opengl-mingw-boilerplate_unscanned_Debug C$:/Users/kylez/Sangatsu/src/BVH.cpp || cmake_object_order_depends_target_opengl-mingw-boilerplate
+  DEFINES = -DGLFW_INCLUDE_NONE -DSHADERS_DIR=\"C:/Users/kylez/Sangatsu/shaders\" -DTEXTURES_DIR=\"C:/Users/kylez/Sangatsu/textures\"
+  DEP_FILE = CMakeFiles\opengl-mingw-boilerplate.dir\src\BVH.cpp.obj.d
+  FLAGS = -static-libgcc -static-libstdc++ -static -g -std=gnu++17 -fdiagnostics-color=always
+  INCLUDES = -IC:/Users/kylez/Sangatsu/include -IC:/Users/kylez/Sangatsu/src -IC:/Users/kylez/Sangatsu/external/glfw/include -IC:/Users/kylez/Sangatsu/external/glm -IC:/Users/kylez/Sangatsu/external/soil/include -IC:/Users/kylez/Sangatsu/external/freetype/include -IC:/Users/kylez/Sangatsu/external/glad/include
+  OBJECT_DIR = CMakeFiles\opengl-mingw-boilerplate.dir
+  OBJECT_FILE_DIR = CMakeFiles\opengl-mingw-boilerplate.dir\src
+
 build CMakeFiles/opengl-mingw-boilerplate.dir/src/Camera.cpp.obj: CXX_COMPILER__opengl-mingw-boilerplate_unscanned_Debug C$:/Users/kylez/Sangatsu/src/Camera.cpp || cmake_object_order_depends_target_opengl-mingw-boilerplate
   DEFINES = -DGLFW_INCLUDE_NONE -DSHADERS_DIR=\"C:/Users/kylez/Sangatsu/shaders\" -DTEXTURES_DIR=\"C:/Users/kylez/Sangatsu/textures\"
   DEP_FILE = CMakeFiles\opengl-mingw-boilerplate.dir\src\Camera.cpp.obj.d
@@ -169,7 +177,7 @@ build CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj: CXX_COMPILER__op
 #############################################
 # Link the executable bin\opengl-mingw-boilerplate.exe
 
-build bin/opengl-mingw-boilerplate.exe: CXX_EXECUTABLE_LINKER__opengl-mingw-boilerplate_Debug CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Camera.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/FBOManager.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/InputManager.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/RayMarcher.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Shader.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/ShaderPreprocessor.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Texture.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Utilities.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Window.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj | libglad.a || libglad.a
+build bin/opengl-mingw-boilerplate.exe: CXX_EXECUTABLE_LINKER__opengl-mingw-boilerplate_Debug CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/BVH.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Camera.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/FBOManager.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/InputManager.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/RayMarcher.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Shader.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/ShaderPreprocessor.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Texture.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Utilities.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/Window.cpp.obj CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj | libglad.a || libglad.a
   FLAGS = -static-libgcc -static-libstdc++ -static -g
   LINK_LIBRARIES = -lglfw3  libglad.a  -lSOIL  -lopengl32  -lfreetype  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   LINK_PATH = -LC:/Users/kylez/Sangatsu/external/glfw/lib   -LC:/Users/kylez/Sangatsu/external/soil/lib   -LC:/Users/kylez/Sangatsu/external/freetype/lib

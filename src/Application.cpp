@@ -23,6 +23,7 @@
 #include <numeric>
 #include <algorithm>
 #include <thread>
+#include <BVH.h>
 
 static constexpr float kMaxTraceDistance   = 100.0f;
 static constexpr float kHalfSize           = 0.865f;
@@ -114,11 +115,31 @@ Application::Application(int w, int h, const char* t) {
         Object({3.2, 4, 4}, glm::vec3(0.5f), 0, 1, "chiseled-cobble", *_texture, 0.25f, 0.2f, 1, 0.5, 1),
         Object({4, 4, 4}, glm::vec3(0.5f), 1, 1, "hammered-gold", *_texture, 0.25f, 0.0001f, 1, 0.5, 0),
     };
-    // for (int i = 0; i < 8; i++) {
-    //     for (int j = 0; j < 8; j++) {
-    //         _objects.emplace_back(Object({i, 0, j}, {1, 1, 1}, glm::vec3(0.5f), 0));
-    //     }
-    // }
+
+    BVHBuilder bvh;
+    bvh.build(_objects);
+
+    for (int i = 0; i < bvh.nodes.size(); ++i) {
+        const auto &n = bvh.nodes[i];
+        std::cout
+            << "Node " << i
+            << " | bounds: [" << n.bounds.min.x << ", " << n.bounds.min.y << ", " << n.bounds.min.z
+            << " to "        << n.bounds.max.x << ", " << n.bounds.max.y << ", " << n.bounds.max.z << "]"
+            << " | left: "  << n.left
+            << " | right: " << n.right
+            << " | start: " << n.start
+            << " | count: " << n.count;
+
+        // if this is a leaf, print its object indices
+        if (n.left < 0 && n.count > 0) {
+            std::cout << " | objects:";
+            for (int j = 0; j < n.count; ++j) {
+                int objIdx = bvh.objectIndices[n.start + j];
+                std::cout << " " << objIdx;
+            }
+        }
+        std::cout << "\n";
+    }
 
     _ssbo       = std::make_unique<SSBOManager>(_objects);
     _rayMarcher = std::make_unique<RayMarcher>(*_shader);
