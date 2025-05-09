@@ -29,6 +29,20 @@ layout (std430, binding = 1) buffer AllObjects {
     Object allObjects[];
 };
 
+struct BVHNode {
+    float minX, minY, minZ; // min bounds
+    float maxX, maxY, maxZ; // max bounds
+    ivec4 child; // x = left, y = right, z = start, w = count
+};
+
+layout (std430, binding = 2) buffer BVHNodes {
+    BVHNode nodes[];
+};
+
+layout (std430, binding = 3) buffer BVHIndices {
+    int objectIndices[];
+};
+
 precision mediump float;
 
 uniform vec2 u_resolution;

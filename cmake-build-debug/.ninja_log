@@ -37,3 +37,10 @@
 1133	1639	7685272787154949	bin/opengl-mingw-boilerplate.exe	e52f5887d5eba924
 1639	1966	7685272792225827	CMakeFiles/Package	a64f6715f7bf78f8
 1639	1966	7685272792225827	C:/Users/kylez/Sangatsu/cmake-build-debug/CMakeFiles/Package	a64f6715f7bf78f8
+19	958	7685282723453997	CMakeFiles/opengl-mingw-boilerplate.dir/src/BVH.cpp.obj	827948f0baa36c3c
+6	1439	7685282723317871	CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj	1fb73e760a226864
+1439	1969	7685282737645211	bin/opengl-mingw-boilerplate.exe	e52f5887d5eba924
+1969	2448	7685282742946420	CMakeFiles/Package	a64f6715f7bf78f8
+1969	2448	7685282742946420	C:/Users/kylez/Sangatsu/cmake-build-debug/CMakeFiles/Package	a64f6715f7bf78f8
+6	317	7685292105986582	CMakeFiles/Package	a64f6715f7bf78f8
+6	317	7685292105986582	C:/Users/kylez/Sangatsu/cmake-build-debug/CMakeFiles/Package	a64f6715f7bf78f8

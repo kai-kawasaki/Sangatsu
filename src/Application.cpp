@@ -146,6 +146,7 @@ Application::Application(int w, int h, const char* t) {
     _rayMarcher->init();
     _fbo = std::make_unique<FBOManager>(w, h);
     _fbo->bind();
+    bvh.generateSSBO();
 
     // ——— Disable culling: render all objects ———
     // _visibleIndices.resize(_objects.size());

@@ -8,6 +8,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "Object.h"
+#include <glad/gl.h>
 
 struct AABB {
     glm::vec3 min, max;
@@ -26,6 +27,7 @@ public:
 
 
     void build(const std::vector<Object>& objects, int leafSize = 4);
+    void generateSSBO() const;
 private:
     int leafSize;
     int buildRecursive(int start, int end, const std::vector<Object>& objects);

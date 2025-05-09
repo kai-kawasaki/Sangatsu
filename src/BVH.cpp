@@ -145,3 +145,27 @@ int BVHBuilder::buildRecursive(int start, int end, const std::vector<Object>& ob
 
     return nodeIndex;
 }
+
+void BVHBuilder::generateSSBO() const {
+    GLuint bvhNodeSSBO;
+    glGenBuffers(1, &bvhNodeSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, bvhNodeSSBO);
+    glBufferData(
+        GL_SHADER_STORAGE_BUFFER,
+        nodes.size() * sizeof(BVHNode),
+        nodes.data(),
+        GL_STATIC_DRAW
+    );
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bvhNodeSSBO);
+
+    GLuint bvhIndexSSBO;
+    glGenBuffers(1, &bvhIndexSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, bvhIndexSSBO);
+    glBufferData(
+        GL_SHADER_STORAGE_BUFFER,
+        objectIndices.size() * sizeof(int),
+        objectIndices.data(),
+        GL_STATIC_DRAW
+    );
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bvhIndexSSBO);
+}
