@@ -2,11 +2,11 @@ float calcAO(vec3 pos, vec3 normal) { //Ambient occlusion
                                       float occ = 0.0;
                                       float sca = 1.0;
 
-                                      for(int i=0; i<5; i++) {
+                                      for(int i=0; i<3; i++) {
                                           float hrconst = 0.03; // larger values = AO
                                           float hr = hrconst + 0.15*float(i)/4.0;
                                           vec3 aopos =  normal * hr + pos;
-                                          float dd = calcSDF( aopos , true).x;
+                                          float dd = calcSDF( aopos ).x;
                                           occ += (hr-dd)*sca;
                                           sca *= 0.95;
                                       }
@@ -18,9 +18,9 @@ float calcSoftshadow(in vec3 ro, in vec3 rd, float mint, float maxt, float w) {
     float res = 1.0;
     float ph = 1e20;
     float t = mint;
-    for( int i=0; i<256 && t<maxt; i++ )
+    for( int i=0; i<32 && t<maxt; i++ )
     {
-        float h = calcSDF(ro + rd*t, false).x;
+        float h = calcSDF(ro + rd*t).x;
         if( h<0.001 )
         return 0.0;
         //float y = h*h/(2.0*ph);
@@ -209,12 +209,12 @@ vec3 getLightPBR(vec3 p, vec3 rd, float id) {
     vec3 H = normalize(V + L);
     vec3 radiance = lightColor * lightIntensity * max(dot(N, L), 0.0);
 
-    // Calculate Cook-Torrance BRDF
-    vec3 Lo = cookTorrance(N, V, L, maps.albedo, maps.metallic, maps.roughness, maps.ao*calcAO(p, N));
-    Lo *= radiance;
-
     // Calculate geometric AO
     float geometricAO = calcAO(p, N);
+
+    // Calculate Cook-Torrance BRDF
+    vec3 Lo = cookTorrance(N, V, L, maps.albedo, maps.metallic, maps.roughness, maps.ao*geometricAO);
+    Lo *= radiance;
 
     // --- IMPROVEMENTS FOR DARK AREAS ---
 

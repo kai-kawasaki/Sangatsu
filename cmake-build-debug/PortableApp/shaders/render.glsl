@@ -12,8 +12,9 @@ float rMarch(vec3 rOrig, vec3 rDir) {
 
     for(int i=0; i<MAX_STEPS; i++) {
         vec3 rPos = rOrig + rDir * dOrig;
-        float dSurf = calcSDF(rPos, true).x;
+        float dSurf = calcSDF(rPos).x;
         dOrig += dSurf;
+
         if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF*clamp(((dOrig*dOrig-3)*LOD_MULTIPLIER),1,MAX_DIST_TO_TRAVEL*MAX_DIST_TO_TRAVEL*LOD_MULTIPLIER)) break;
         //if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF) break;
     }
@@ -284,7 +285,7 @@ void main() {
         vec3 hitPos = cameraPos + rayDir * dist;
 
         // Get object ID that was hit
-        float objectID = calcSDF(hitPos, true).y;
+        float objectID = calcSDF(hitPos).y;
 
         // Choose shading method based on render mode
         if (u_renderMode == 0) {
@@ -319,4 +320,3 @@ void main() {
     // Output final color
     FragColor = vec4(color, 1.0);
 }
-

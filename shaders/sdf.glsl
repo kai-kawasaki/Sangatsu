@@ -3,7 +3,7 @@
 // Function declarations
 float getObjectRaw(Object object, vec3 pos);
 float getObject(Object object, vec3 pos);
-vec2 calcSDF(vec3 pos, bool cull);
+vec2 calcSDF(vec3 pos);
 vec3 getPrimitiveNormal(Object object, vec3 pos);
 float sampleDisplacement(vec3 pos, vec3 N, int heightLayer, float scale);
 vec4 getNormal(vec3 pos);
@@ -93,135 +93,124 @@ float sampleDisplacement(vec3 pos, vec3 N, int heightLayer, float scale) {
     + hYZ * w.x;
 }
 
-vec2 calcSDF(vec3 pos, bool cull) {
+//vec2 calcSDF(vec3 pos) {
+//    vec2 sceneDist = vec2(MAX_DIST_TO_TRAVEL, -1.0);
+//
+//    int i = 0;
+//    while (i < allObjects.length()) {
+//        Object head = allObjects[i];
+//        int last = min(i + head.groupLength, allObjects.length() - 1);
+//
+//        float d0 = getObject(head, pos);
+//        vec2 groupDist = vec2(d0, float(i));
+//
+//        for (int j = i + 1; j <= last; ++j) {
+//            Object o = allObjects[j];
+//            float dj = getObject(o, pos);
+//
+//            switch (o.operation) {
+//                case 0: {
+//                            float u = opUnion(groupDist.x, dj);
+//                            float uID = (groupDist.x < dj) ? groupDist.y : float(j);
+//                            groupDist = vec2(u, uID);
+//                        } break;
+//                case 1: {
+//                            float su = opSmoothUnion(groupDist.x, dj, o.blendRadius);
+//                            float suID = (groupDist.x < dj) ? groupDist.y : float(j);
+//                            groupDist = vec2(su, suID);
+//                        } break;
+//                case 2: {
+//                            groupDist = maxID(vec2(dj, float(j)), groupDist);
+//                        } break;
+//                case 3: {
+//                            float si = opSmoothIntersection(groupDist.x, dj, o.blendRadius);
+//                            float siID = (groupDist.x > dj) ? groupDist.y : float(j);
+//                            groupDist = vec2(si, siID);
+//                        } break;
+//                case 4: {
+//                            float hs = opSubtraction(groupDist.x, dj);
+//                            float hsID = (-groupDist.x > dj) ? groupDist.y : float(j);
+//                            groupDist = vec2(hs, hsID);
+//                        } break;
+//                case 5: {
+//                            float ss = opSmoothSubtraction(groupDist.x, dj, o.blendRadius);
+//                            float ssID = (groupDist.x < -dj) ? groupDist.y : float(j);
+//                            groupDist = vec2(ss, ssID);
+//                        } break;
+//            }
+//        }
+//
+//        sceneDist = minID(groupDist, sceneDist);
+//        i = last + 1;
+//    }
+//
+//    return sceneDist;
+//}
+
+// fast AABB‐SDF for culling
+float sdBox(vec3 p, vec3 b) {
+    vec3 d = abs(p) - b;
+    vec3 m = max(d, vec3(0.0));
+    return length(m) + min(max(d.x, max(d.y, d.z)), 0.0);
+}
+
+vec2 calcSDF(vec3 pos) {
     vec2 sceneDist = vec2(MAX_DIST_TO_TRAVEL, -1.0);
 
-    if (cull) {
-        int i = 0;
-        while (i < u_countObjects) {
-            // head of this group
-            Object head = visibleObjects[i];
-            int glen = head.groupLength;
-            int last = min(i + glen, u_countObjects - 1);
+    // Simple fixed‐size stack
+    int stack[64];
+    int top = 0;
+    stack[top++] = 0; // root node
 
-            // --- initialize accumulator from the first object in the group ---
-            float d0 = getObject(head, pos);
-            vec2 groupDist = vec2(d0, float(i));
+    while (top > 0) {
+        int idx = stack[--top];
+        BVHNode n = nodes[idx];
 
-            // --- fold in each of the remaining members j = i+1 .. last ---
-            for (int j = i + 1; j <= last; ++j) {
-                Object o = visibleObjects[j];
-                float dj = getObject(o, pos);
+        // reconstruct box center & extent
+        vec3 bMin = n.boundsMin.xyz;
+        vec3 bMax = n.boundsMax.xyz;
+        vec3 center = (bMin + bMax) * 0.5;
+        vec3 extent = (bMax - bMin) * 0.5;
 
-                // choose the operation of this *member*, not the head
-                switch (o.operation) {
-                    case 0: {
-                                // hard‐union = min(d1, d2)
-                                float u = opUnion(groupDist.x, dj);
-                                // whichever was nearer before union
-                                float uID = (groupDist.x < dj) ? groupDist.y : float(j);
-                                groupDist = vec2(u, uID);
-                            } break;
+        // fast AABB‐SDF
+        float dBox = sdBox(pos - center, extent);
+        if (dBox > sceneDist.x) continue;      // prune whole subtree
 
-                    case 1: {
-                                // smooth‐union
-                                float su = opSmoothUnion(groupDist.x, dj, o.blendRadius);
-                                float suID = (groupDist.x < dj) ? groupDist.y : float(j);
-                                groupDist = vec2(su, suID);
-                            } break;
-
-                    case 2: {
-                                // hard‐intersection = max(d1, d2)
-                                vec2 inter = maxID(vec2(dj, float(j)), groupDist);
-                                groupDist = inter;
-                            } break;
-
-                    case 3: {
-                                // smooth‐intersection
-                                float si = opSmoothIntersection(groupDist.x, dj, o.blendRadius);
-                                // whichever was "farther" before smoothing
-                                float siID = (groupDist.x > dj) ? groupDist.y : float(j);
-                                groupDist = vec2(si, siID);
-                            } break;
-
-                    case 4: {
-                                // hard‐subtraction = max(-d1, d2)
-                                float hs = opSubtraction(groupDist.x, dj);
-                                // pick ID of the branch that set the max:
-                                // if -d1 > d2, we keep the original; else we switch to j
-                                float hsID = (-groupDist.x > dj) ? groupDist.y : float(j);
-                                groupDist = vec2(hs, hsID);
-                            } break;
-
-                    case 5: {
-                                // smooth‐subtraction
-                                float ss = opSmoothSubtraction(groupDist.x, dj, o.blendRadius);
-                                // pick the ID of whichever region "won" before smoothing:
-                                // if original (d1) dominated, keep its ID; else use j
-                                float ssID = (groupDist.x < -dj) ? groupDist.y : float(j);
-                                groupDist = vec2(ss, ssID);
-                            } break;
-
-                // add more cases here if you introduce new ops…
-                }
-
+        // leaf?
+        if (n.child.x < 0) {
+            int start = n.child.z;
+            int count = n.child.w;
+            for (int i = 0; i < count; ++i) {
+                int oid = objectIndices[start + i];
+                Object o = allObjects[oid];
+                float d = getObject(o, pos);
+                sceneDist = minID(vec2(d, float(oid)), sceneDist);
             }
+        } else {
+            // internal: sort children by their box‐distance
+            int left  = n.child.x;
+            int right = n.child.y;
 
-            // --- merge this group's result into the overall scene ---
-            sceneDist = minID(groupDist, sceneDist);
+            // load children
+            BVHNode ln = nodes[left];
+            BVHNode rn = nodes[right];
+            // compute their box‐SDFs
+            vec3  lCenter = (ln.boundsMin.xyz + ln.boundsMax.xyz)*0.5;
+            vec3  lExtent = (ln.boundsMax.xyz - ln.boundsMin.xyz)*0.5;
+            float dL = sdBox(pos - lCenter, lExtent);
 
-            // advance to next group
-            i = last + 1;
-        }
+            vec3  rCenter = (rn.boundsMin.xyz + rn.boundsMax.xyz)*0.5;
+            vec3  rExtent = (rn.boundsMax.xyz - rn.boundsMin.xyz)*0.5;
+            float dR = sdBox(pos - rCenter, rExtent);
 
-    } else {
-        // ——— non-culled path over allObjects ———
-        int i = 0;
-        while (i < allObjects.length()) {
-            Object head = allObjects[i];
-            int last = min(i + head.groupLength, allObjects.length() - 1);
-
-            float d0 = getObject(head, pos);
-            vec2 groupDist = vec2(d0, float(i));
-
-            for (int j = i + 1; j <= last; ++j) {
-                Object o = allObjects[j];
-                float dj = getObject(o, pos);
-
-                switch (o.operation) {
-                    case 0: {
-                                float u = opUnion(groupDist.x, dj);
-                                float uID = (groupDist.x < dj) ? groupDist.y : float(j);
-                                groupDist = vec2(u, uID);
-                            } break;
-                    case 1: {
-                                float su = opSmoothUnion(groupDist.x, dj, o.blendRadius);
-                                float suID = (groupDist.x < dj) ? groupDist.y : float(j);
-                                groupDist = vec2(su, suID);
-                            } break;
-                    case 2: {
-                                groupDist = maxID(vec2(dj, float(j)), groupDist);
-                            } break;
-                    case 3: {
-                                float si = opSmoothIntersection(groupDist.x, dj, o.blendRadius);
-                                float siID = (groupDist.x > dj) ? groupDist.y : float(j);
-                                groupDist = vec2(si, siID);
-                            } break;
-                    case 4: {
-                                float hs = opSubtraction(groupDist.x, dj);
-                                float hsID = (-groupDist.x > dj) ? groupDist.y : float(j);
-                                groupDist = vec2(hs, hsID);
-                            } break;
-                    case 5: {
-                                float ss = opSmoothSubtraction(groupDist.x, dj, o.blendRadius);
-                                float ssID = (groupDist.x < -dj) ? groupDist.y : float(j);
-                                groupDist = vec2(ss, ssID);
-                            } break;
-                }
+            // push *farther* first so the *nearer* is popped next
+            if (dL < dR) {
+                if (dR <= sceneDist.x) stack[top++] = right;
+                if (dL <= sceneDist.x) stack[top++] = left;
+            } else {
+                if (dL <= sceneDist.x) stack[top++] = left;
+                if (dR <= sceneDist.x) stack[top++] = right;
             }
-
-            sceneDist = minID(groupDist, sceneDist);
-            i = last + 1;
         }
     }
 
@@ -242,13 +231,13 @@ vec3 getPrimitiveNormal(Object object, vec3 pos) {
 }
 
 vec4 getNormal(vec3 pos) {
-    vec2 dist = calcSDF(pos, true);
+    vec2 dist = calcSDF(pos);
     vec2 e = vec2(EPSILON, 0.0);
 
     vec3 normal = dist.x - vec3(
-    calcSDF(pos-e.xyy, true).x,
-    calcSDF(pos-e.yxy, true).x,
-    calcSDF(pos-e.yyx, true).x);
+    calcSDF(pos-e.xyy).x,
+    calcSDF(pos-e.yxy).x,
+    calcSDF(pos-e.yyx).x);
 
     return vec4(normalize(normal), dist.y);
 }

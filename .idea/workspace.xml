@@ -30,19 +30,25 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Basic BVH implementation.">
+    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="BVH elements passed to shader as SSBO.">
+      <change beforePath="$PROJECT_DIR$/.idea/editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/editor.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/common.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/common.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/lighting.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/lighting.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/render.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/render.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/sdf.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/sdf.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/include/BVH.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/BVH.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shaders/common.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/common.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shaders/lighting.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/lighting.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shaders/render.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/render.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shaders/sdf.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/sdf.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Application.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Application.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/BVH.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/BVH.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Globals.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Globals.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -121,7 +127,7 @@
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;kyle-screwin&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/kylez/CLionProjects/Sangatsu/textures&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/kylez/Sangatsu&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -147,11 +153,6 @@
       <method v="2" />
     </configuration>
     <configuration name="Package" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="opengl-mingw-boilerplate" TARGET_NAME="Package" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="opengl-mingw-boilerplate" RUN_TARGET_NAME="opengl-mingw-boilerplate">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -206,6 +207,7 @@
       <workItem from="1745645552190" duration="27435000" />
       <workItem from="1746052578357" duration="52000" />
       <workItem from="1746557155689" duration="11325000" />
+      <workItem from="1746827287105" duration="3239000" />
     </task>
     <task id="LOCAL-00001" summary="Fixed SSBOs for object positions saved in C++ for shader use.">
       <option name="closed" value="true" />
@@ -335,7 +337,15 @@
       <option name="project" value="LOCAL" />
       <updated>1746824334933</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="BVH elements passed to shader as SSBO.">
+      <option name="closed" value="true" />
+      <created>1746826038774</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1746826038774</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -372,6 +382,7 @@
     <MESSAGE value="Changed texture handling in C++. Fragmented the shaders for readability." />
     <MESSAGE value="Fixing Kai's fuck up." />
     <MESSAGE value="Basic BVH implementation." />
-    <option name="LAST_COMMIT_MESSAGE" value="Basic BVH implementation." />
+    <MESSAGE value="BVH elements passed to shader as SSBO." />
+    <option name="LAST_COMMIT_MESSAGE" value="BVH elements passed to shader as SSBO." />
   </component>
 </project>
