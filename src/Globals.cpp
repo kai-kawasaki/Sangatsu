@@ -8,4 +8,4 @@ bool flashlightOn = false;
 int renderMode = 1;
 int widthG = 640;
 int heightG = 360;
-const int FRAMES_IN_FLIGHT = 5;
+const int FRAMES_IN_FLIGHT = 3;

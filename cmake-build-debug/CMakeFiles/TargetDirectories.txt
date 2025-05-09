@@ -1,0 +1,5 @@
+C:/Users/kylez/Sangatsu/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir
+C:/Users/kylez/Sangatsu/cmake-build-debug/CMakeFiles/glad.dir
+C:/Users/kylez/Sangatsu/cmake-build-debug/CMakeFiles/Package.dir
+C:/Users/kylez/Sangatsu/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/kylez/Sangatsu/cmake-build-debug/CMakeFiles/rebuild_cache.dir

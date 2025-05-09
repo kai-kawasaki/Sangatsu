@@ -39,12 +39,7 @@ void logOpenGLInfo() {
 }
 
 Application::Application(int w, int h, const char* t) {
-    //set openGL version
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    // 1) Create window & make its context current
+    // 1) Create a window and make its context current
     _window = std::make_unique<Window>(w, h, t);
 
     // 2) Load GLAD
