@@ -30,9 +30,9 @@ layout (std430, binding = 1) buffer AllObjects {
 };
 
 struct BVHNode {
-    float minX, minY, minZ; // min bounds
-    float maxX, maxY, maxZ; // max bounds
-    ivec4 child; // x = left, y = right, z = start, w = count
+    vec4 boundsMin;   // xyz = min,   w = unused
+    vec4 boundsMax;   // xyz = max,   w = unused
+    ivec4 child;      // x = left, y = right, z = start, w = count
 };
 
 layout (std430, binding = 2) buffer BVHNodes {
@@ -61,7 +61,7 @@ uniform sampler2DArray textureArray;
 const float MAX_STEPS = 500.0;
 const float MIN_DIST_TO_SDF = 0.001;
 const float MAX_DIST_TO_TRAVEL = 100.0;
-const float EPSILON = 0.001;
+const float EPSILON = 0.0001;
 const float LOD_MULTIPLIER = 0.06;
 
 struct Light {

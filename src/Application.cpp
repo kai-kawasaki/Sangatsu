@@ -106,18 +106,22 @@ Application::Application(int w, int h, const char* t) {
         Object({4, 1, 3}, glm::vec3(0.5f), 0, {0, 1, 0}),
         // Object({4, 2, 5}, glm::vec3(0.5f), 1, 1, 2, 1, 0.5),
         Object({0, 10, 0}, glm::vec3(0.5f), 10, {0, 1, 0}),
-        Object({5, 5, 6}, glm::vec3(0.5f), 1, {0, 0, 1}/*, 1, 0.5, 1*/),
+        Object({5, 5, 6}, glm::vec3(0.5f), 0, {0, 0, 1}/*, 1, 0.5, 1*/),
         Object({6, 5, 6}, glm::vec3(0.5f), 0, {1, 1, 0}/*, 1, 0.5, 0*/),
-        Object({0, 0, 0}, {10,0.5,10}, 0, 1, "patchy-meadow1", *_texture, 0.75f, 0.001f),
-        Object({7,7,7}, glm::vec3(0.5), 1, 1, "vertical-streak-cliff", *_texture, 0.25f, 0.01f),
-        Object({1.4, 1, 1}, glm::vec3(0.1f), 1, {0.761, 0, 1}/*, 5, 0.3f, 1*/),
+        Object({0, 0, 0}, {10,0.5,10}, 0, {0, 1, 0}),
+        // Object({0, 0, 0}, {10,0.5,10}, 0, 1, "patchy-meadow1", *_texture, 0.75f, 0.001f),
+        // Object({7,7,7}, glm::vec3(0.5), 1, 1, "vertical-streak-cliff", *_texture, 0.25f, 0.01f),
+        Object({5, 5, 1}, glm::vec3(1.0f), 0, {0.761, 0, 1}/*, 5, 0.3f, 1*/),
         Object({1, 1, 1}, glm::vec3(0.5f), 0, {0.7, 0, 1}/*, 5, 0.3f*/),
-        Object({3.2, 4, 4}, glm::vec3(0.5f), 0, 1, "chiseled-cobble", *_texture, 0.25f, 0.2f/*, 1, 0.5, 1*/),
-        Object({4, 4, 4}, glm::vec3(0.5f), 1, 1, "hammered-gold", *_texture, 0.25f, 0.0001f/*, 1, 0.5, 0*/),
+        Object({1, 3, 8}, glm::vec3(0.5f), 0, {0.7, 0.5, 1}/*, 5, 0.3f*/),
+        Object({4, 1, 1}, glm::vec3(0.5f), 0, {1, 0, 1}/*, 5, 0.3f*/),
+        Object({4, 1, 5}, glm::vec3(0.5f), 0, {0.5, 1, 1}/*, 5, 0.3f*/),
+        // Object({4, 4, 4}, glm::vec3(0.5f), 0, 1, "chiseled-cobble", *_texture, 0.5f, 0.2f/*, 1, 0.5, 1*/),
+        // Object({3, 4, 4}, glm::vec3(0.5f), 0, 1, "hammered-gold", *_texture, 0.25f, 0.0001f/*, 1, 0.5, 0*/),
     };
 
     BVHBuilder bvh;
-    bvh.build(_objects, 2);
+    bvh.build(_objects, 1);
 
     for (int i = 0; i < bvh.nodes.size(); ++i) {
         const auto &n = bvh.nodes[i];
@@ -238,31 +242,31 @@ void Application::loop() {
         float tanHFOV = std::tan(_camera->halfHFOV());
         float tanVFOV = std::tan(_camera->halfVFOV());
 
-        for (size_t i = 0; i < _objects.size(); i++) {
-            /* TODO: Reimplement culling with BVH.
-            const auto& obj = _objects[i];
-            glm::vec3 toObj = obj.position - _camPos;
-
-            // project onto camera axes
-            float zc = glm::dot(toObj, camFwd);
-            float xc = glm::dot(toObj, camRight);
-            float yc = glm::dot(toObj, camUp);
-
-            // distance cull, expanded by radius
-            if (zc + kRadius <= 0.0f || zc - kRadius > kMaxTraceDistance)
-                continue;
-
-            // frustum planes cull, expanded by radius
-            float halfW = zc * tanHFOV;
-            float halfH = zc * tanVFOV;
-            if (xc >  halfW + kRadius || xc < -halfW - kRadius) continue;
-            if (yc >  halfH + kRadius || yc < -halfH - kRadius) continue;
-            */
-
-            _visibleIndices.push_back(i);
-        }
-
-        _ssbo->updateIndices(_visibleIndices, _frameIndex);
+//         for (size_t i = 0; i < _objects.size(); i++) {
+//             /* TODO: Reimplement culling with BVH.
+//             const auto& obj = _objects[i];
+//             glm::vec3 toObj = obj.position - _camPos;
+//
+//             // project onto camera axes
+//             float zc = glm::dot(toObj, camFwd);
+//             float xc = glm::dot(toObj, camRight);
+//             float yc = glm::dot(toObj, camUp);
+//
+//             // distance cull, expanded by radius
+//             if (zc + kRadius <= 0.0f || zc - kRadius > kMaxTraceDistance)
+//                 continue;
+//
+//             // frustum planes cull, expanded by radius
+//             float halfW = zc * tanHFOV;
+//             float halfH = zc * tanVFOV;
+//             if (xc >  halfW + kRadius || xc < -halfW - kRadius) continue;
+//             if (yc >  halfH + kRadius || yc < -halfH - kRadius) continue;
+//             */
+//
+//             _visibleIndices.push_back(i);
+//         }
+//
+//         _ssbo->updateIndices(_visibleIndices, _frameIndex);
 
         // Calculate sun position with circular motion
         float sunRadius = 500.0f; // Distance from origin

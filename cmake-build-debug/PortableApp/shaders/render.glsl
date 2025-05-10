@@ -7,20 +7,162 @@
 in vec3 color;
 layout (location = 0) out vec4 FragColor;
 
-float rMarch(vec3 rOrig, vec3 rDir) {
-    float dOrig = 0.0; // distance from ray origin
+//float rMarch(vec3 rOrig, vec3 rDir) {
+//    float dOrig = 0.0; // distance from ray origin
+//
+//    for(int i=0; i<MAX_STEPS; i++) {
+//        vec3 rPos = rOrig + rDir * dOrig;
+//        float dSurf = calcSDF(rPos).x;
+//        dOrig += dSurf;
+//
+//        if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF*clamp(((dOrig*dOrig-3)*LOD_MULTIPLIER),1,MAX_DIST_TO_TRAVEL*MAX_DIST_TO_TRAVEL*LOD_MULTIPLIER)) break;
+//        //if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF) break;
+//    }
+//
+//    return dOrig;
+//}
 
-    for(int i=0; i<MAX_STEPS; i++) {
-        vec3 rPos = rOrig + rDir * dOrig;
-        float dSurf = calcSDF(rPos).x;
-        dOrig += dSurf;
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+// 1) Ray ⇔ AABB slab test, returns (tEnter, tExit)
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+vec2 intersectRayAABB(vec3 ro, vec3 rd, vec3 bMin, vec3 bMax) {
+    // Handle zero components in ray direction
+    vec3 invR = vec3(
+    abs(rd.x) < 1e-6 ? 1e6 * sign(rd.x) : 1.0 / rd.x,
+    abs(rd.y) < 1e-6 ? 1e6 * sign(rd.y) : 1.0 / rd.y,
+    abs(rd.z) < 1e-6 ? 1e6 * sign(rd.z) : 1.0 / rd.z
+    );
 
-        if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF*clamp(((dOrig*dOrig-3)*LOD_MULTIPLIER),1,MAX_DIST_TO_TRAVEL*MAX_DIST_TO_TRAVEL*LOD_MULTIPLIER)) break;
-        //if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF) break;
+    vec3 t0s = (bMin - ro) * invR;
+    vec3 t1s = (bMax - ro) * invR;
+    vec3 tMin = min(t0s, t1s);
+    vec3 tMax = max(t0s, t1s);
+
+    float tEnter = max(max(tMin.x, tMin.y), tMin.z);
+    float tExit = min(min(tMax.x, tMax.y), tMax.z);
+
+    // Handle special case when ray origin is inside box
+    if (ro.x >= bMin.x && ro.x <= bMax.x &&
+    ro.y >= bMin.y && ro.y <= bMax.y &&
+    ro.z >= bMin.z && ro.z <= bMax.z) {
+        tEnter = 0.0;
     }
 
-    return dOrig;
+    return vec2(tEnter, tExit);
 }
+
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+// 2) Sphere-trace *only* in [t0,t1].  Returns >0 on hit, else −1
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+float sphereTraceSegment(vec3 ro, vec3 rd, float t0, float t1) {
+    float t = max(t0, 0.0);
+    for(int i = 0; i < MAX_STEPS; i++) {
+        if (t > t1) break;
+        vec3 pos = ro + rd * t;
+        float d = calcSDF(pos).x;
+//        if(t > MAX_DIST_TO_TRAVEL || abs(d) < MIN_DIST_TO_SDF*clamp(((t*t-3)*LOD_MULTIPLIER),1,MAX_DIST_TO_TRAVEL*MAX_DIST_TO_TRAVEL*LOD_MULTIPLIER)) return t;
+        if (d < MIN_DIST_TO_SDF) return t;
+        t += d;
+    }
+    return -1.0;
+}
+
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+// 3) Full BVH‐based ray tracer: returns first hit distance or MAX_DIST
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+float traceBVH(vec3 ro, vec3 rd) {
+    // Early exit for degenerate rays
+    if (dot(rd, rd) < 0.0001) return MAX_DIST_TO_TRAVEL;
+
+    float tHit = MAX_DIST_TO_TRAVEL;
+
+    // Fixed-size stack for traversal
+    const int maxStackSize = 64;
+    int stack[64];
+    int stackPtr = 0;
+
+    // Push root node
+    stack[stackPtr++] = 0;
+
+    // Main traversal loop - process until stack is empty
+    while (stackPtr > 0) {
+        // Pop node index from stack
+        int nodeIdx = stack[--stackPtr];
+
+        // Bounds check
+        if (nodeIdx < 0 || nodeIdx >= nodes.length()) continue;
+
+        // Fetch current node
+        BVHNode node = nodes[nodeIdx];
+
+        // Test ray against node's AABB
+        vec3 boxMin = node.boundsMin.xyz;
+        vec3 boxMax = node.boundsMax.xyz;
+
+        // Skip invalid boxes
+        if (any(lessThan(boxMax, boxMin))) continue;
+
+        // Ray-box intersection
+        vec2 tBox = intersectRayAABB(ro, rd, boxMin, boxMax);
+
+        // Skip if no intersection or behind current closest hit
+        if (tBox.x > tBox.y || tBox.y < 0.0 || tBox.x > tHit) continue;
+
+        // Is this a leaf node?
+        if (node.child.x < 0) {
+            // It's a leaf - do sphere tracing within the box bounds
+            float t0 = max(tBox.x, 0.0);    // Start at ray entry or origin
+            float t1 = min(tBox.y, tHit);   // End at ray exit or current hit
+
+            // Only trace if there's a valid segment
+            if (t0 < t1) {
+                float hitDist = sphereTraceSegment(ro, rd, t0, t1);
+                if (hitDist > 0.0 && hitDist < tHit) {
+                    tHit = hitDist;
+                }
+            }
+        }
+        else {
+            // Not a leaf - process children
+            int leftChild = node.child.x;
+            int rightChild = node.child.y;
+
+            // Make sure indices are valid
+            if (leftChild >= 0 && leftChild < nodes.length() &&
+            rightChild >= 0 && rightChild < nodes.length()) {
+
+                // Process children in near-to-far order
+                // First get the entry distances for both children
+                BVHNode leftNode = nodes[leftChild];
+                BVHNode rightNode = nodes[rightChild];
+
+                vec2 leftBox = intersectRayAABB(ro, rd, leftNode.boundsMin.xyz, leftNode.boundsMax.xyz);
+                vec2 rightBox = intersectRayAABB(ro, rd, rightNode.boundsMin.xyz, rightNode.boundsMax.xyz);
+
+                float leftDist = leftBox.x;
+                float rightDist = rightBox.x;
+
+                // Check if we should even consider these nodes
+                bool traverseLeft = leftBox.x <= leftBox.y && leftBox.y >= 0.0 && leftBox.x < tHit;
+                bool traverseRight = rightBox.x <= rightBox.y && rightBox.y >= 0.0 && rightBox.x < tHit;
+
+                // Push in reverse order (farther first, so nearest gets processed first)
+                if (leftDist > rightDist) {
+                    // Right is closer, push left first (processed second)
+                    if (traverseLeft && stackPtr < maxStackSize) stack[stackPtr++] = leftChild;
+                    if (traverseRight && stackPtr < maxStackSize) stack[stackPtr++] = rightChild;
+                } else {
+                    // Left is closer, push right first (processed second)
+                    if (traverseRight && stackPtr < maxStackSize) stack[stackPtr++] = rightChild;
+                    if (traverseLeft && stackPtr < maxStackSize) stack[stackPtr++] = leftChild;
+                }
+            }
+        }
+    }
+
+    return tHit;
+}
+
 
 vec2 getUV(vec2 offset) {
     return ((gl_FragCoord.xy + offset) - 0.5 * u_resolution.xy) / u_resolution.y;
@@ -51,16 +193,6 @@ vec3 applyFog(vec3 color, float distance, vec3 rayDir, vec3 sunDir) {
     return mix(color, fogColor, fogAmount);
 }
 
-vec3 applyWaterFog(vec3 color, float distance, vec3 rayDir, vec3 sunDir) {
-    float fogAmount = 1.0 - exp(-distance * 0.0002);
-    float sunAmount = max(dot(rayDir, sunDir), 0.0);
-    vec3 fogColor = mix(
-        vec3(0.1, 0.2, 0.3), // deep water color
-        vec3(0.3, 0.5, 0.6), // shallow water color with sun
-        pow(sunAmount, 4.0)
-    );
-    return mix(color, fogColor, fogAmount);
-}
 
 //float linstep(in float mn, in float mx, in float x){
 //    return clamp((x - mn)/(mx - mn), 0., 1.);
@@ -275,10 +407,11 @@ void main() {
     vec3 rayDir = rCam(vec2(0.0));
 
     // Ray marching
-    float dist = rMarch(cameraPos, rayDir);
+    float dist = traceBVH(cameraPos, rayDir);
 
     // Initialize color
-    vec3 color;
+    float t = 0.5 * (1.0 + rayDir.y);
+    vec3 color = mix(vec3(1.0), vec3(0.15, 0.3, 1.0), t);
 
     if (dist < MAX_DIST_TO_TRAVEL) {
         // Hit point
@@ -299,15 +432,6 @@ void main() {
         // Apply fog
         vec3 sunDir = normalize(vec3(0.5, 0.8, 0.2));
         color = applyFog(color, dist, rayDir, sunDir);
-    }
-    else {
-        // Sky gradient
-        float t = 0.5 * (rayDir.y + 1.0);
-        color = mix(vec3(1.0), vec3(0.15, 0.3, 1.0), t);
-
-//        vec3 scatt = scatter(cameraPos, rayDir);
-//        color = stars(rayDir)*(1.0-clamp(dot(scatt, vec3(1.3)),0.,1.));
-//        color = renderStarrySky(cameraPos, rayDir);
     }
 
     // 3) add micro-dither to suppress any residual posterization

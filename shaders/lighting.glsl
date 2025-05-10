@@ -2,7 +2,7 @@ float calcAO(vec3 pos, vec3 normal) { //Ambient occlusion
                                       float occ = 0.0;
                                       float sca = 1.0;
 
-                                      for(int i=0; i<3; i++) {
+                                      for(int i=0; i<5; i++) {
                                           float hrconst = 0.03; // larger values = AO
                                           float hr = hrconst + 0.15*float(i)/4.0;
                                           vec3 aopos =  normal * hr + pos;
@@ -18,7 +18,7 @@ float calcSoftshadow(in vec3 ro, in vec3 rd, float mint, float maxt, float w) {
     float res = 1.0;
     float ph = 1e20;
     float t = mint;
-    for( int i=0; i<32 && t<maxt; i++ )
+    for( int i=0; i<64 && t<maxt; i++ )
     {
         float h = calcSDF(ro + rd*t).x;
         if( h<0.001 )
@@ -49,7 +49,7 @@ float softShadowPCF(vec3 p, vec3 L) {
 }
 
 vec3 getMaterial(vec3 p, float id, vec3 normal) {
-    Object object = visibleObjects[int(id)];
+    Object object = allObjects[int(id)];
 
     if (object.materialID == -1) {
         return vec3(object.r, object.g, object.b);
@@ -75,7 +75,7 @@ vec3 getLightPhong(vec3 p, vec3 rd, float id) {
 
     // Fetch the object's color based on its ID
     int objID = int(id);
-    vec3 color = vec3(visibleObjects[objID].r, visibleObjects[objID].g, visibleObjects[objID].b);
+    vec3 color = vec3(allObjects[objID].r, allObjects[objID].g, allObjects[objID].b);
     //vec3 color = vec3(objID/100.0f, 0, 0);
 
 
@@ -171,7 +171,7 @@ vec3 getLightPBR(vec3 p, vec3 rd, float id) {
     int objID = int(normalData.w);
 
     // Get the object that was hit
-    Object obj = visibleObjects[objID];
+    Object obj = allObjects[objID];
 
     // View and light vectors
     vec3 V = normalize(-rd);  // View direction

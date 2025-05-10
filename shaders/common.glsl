@@ -58,10 +58,10 @@ uniform vec3 u_lightPos;
 uniform sampler2DArray textureArray;
 
 // Constants
-const float MAX_STEPS = 100.0;
+const float MAX_STEPS = 500.0;
 const float MIN_DIST_TO_SDF = 0.001;
 const float MAX_DIST_TO_TRAVEL = 100.0;
-const float EPSILON = 0.001;
+const float EPSILON = 0.0001;
 const float LOD_MULTIPLIER = 0.06;
 
 struct Light {
