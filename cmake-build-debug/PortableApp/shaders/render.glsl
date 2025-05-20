@@ -4,8 +4,8 @@
 #include "mapping.glsl"
 #include "lighting.glsl"
 
-in vec3 color;
-layout (location = 0) out vec4 FragColor;
+layout (local_size_x = 16, local_size_y = 16) in;
+layout (binding = 0, rgba32f) uniform writeonly image2D resultImage;
 
 //float rMarch(vec3 rOrig, vec3 rDir) {
 //    float dOrig = 0.0; // distance from ray origin
@@ -165,7 +165,10 @@ float traceBVH(vec3 ro, vec3 rd) {
 
 
 vec2 getUV(vec2 offset) {
-    return ((gl_FragCoord.xy + offset) - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec2 uv = (gl_GlobalInvocationID.xy / u_resolution.xy) * 2.0 - 1.0;
+    uv.x *= u_resolution.x / u_resolution.y;
+    uv += offset;
+    return uv;
 }
 
 vec3 rCam(vec2 offset) {
@@ -397,50 +400,59 @@ vec3 applyFog(vec3 color, float distance, vec3 rayDir, vec3 sunDir) {
 //}
 
 void main() {
-    vec2 fragCoord = gl_FragCoord.xy;
-    vec2 uv = fragCoord/u_resolution.xy;
-    vec2 p = uv * 2.0 - 1.0;
-    p.x *= u_resolution.x / u_resolution.y;
-
-    // Camera setup (OLD SYSTEM)
-    vec3 cameraPos = u_camPos;
-    vec3 rayDir = rCam(vec2(0.0));
-
-    // Ray marching
-    float dist = traceBVH(cameraPos, rayDir);
-
-    // Initialize color
-    float t = 0.5 * (1.0 + rayDir.y);
-    vec3 color = mix(vec3(1.0), vec3(0.15, 0.3, 1.0), t);
-
-    if (dist < MAX_DIST_TO_TRAVEL) {
-        // Hit point
-        vec3 hitPos = cameraPos + rayDir * dist;
-
-        // Get object ID that was hit
-        float objectID = calcSDF(hitPos).y;
-
-        // Choose shading method based on render mode
-        if (u_renderMode == 0) {
-            // Phong shading
-            color = getLightPhong(hitPos, rayDir, objectID);
-        } else {
-            // PBR shading
-            color = getLightPBR(hitPos, rayDir, objectID);
-        }
-
-        // Apply fog
-        vec3 sunDir = normalize(vec3(0.5, 0.8, 0.2));
-        color = applyFog(color, dist, rayDir, sunDir);
-    }
-
-    // 3) add micro-dither to suppress any residual posterization
-//    float d = (fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233))) * 43758.5453) - 0.5) / 255.0;
-//    color += d;
-
-    // Gamma correction
-    color = pow(color, vec3(1.0/2.2));
-
-    // Output final color
-    FragColor = vec4(color, 1.0);
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    // write bright red everywhere
+    imageStore(resultImage, pixel, vec4(1,0,0,1));
 }
+
+
+//void main() {
+////    vec2 fragCoord = gl_FragCoord.xy;
+////    vec2 uv = fragCoord/u_resolution.xy;
+//    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+//    vec2 uv = (vec2(pixel) / u_resolution.xy) * 2.0 - 1.0;
+//    vec2 p = uv * 2.0 - 1.0;
+//    p.x *= u_resolution.x / u_resolution.y;
+//
+//    // Camera setup (OLD SYSTEM)
+//    vec3 cameraPos = u_camPos;
+//    vec3 rayDir = rCam(vec2(0.0));
+//
+//    // Ray marching
+//    float dist = traceBVH(cameraPos, rayDir);
+//
+//    // Initialize color
+//    float t = 0.5 * (1.0 + rayDir.y);
+//    vec3 color = mix(vec3(1.0), vec3(0.15, 0.3, 1.0), t);
+//
+//    if (dist < MAX_DIST_TO_TRAVEL) {
+//        // Hit point
+//        vec3 hitPos = cameraPos + rayDir * dist;
+//
+//        // Get object ID that was hit
+//        float objectID = calcSDF(hitPos).y;
+//
+//        // Choose shading method based on render mode
+//        if (u_renderMode == 0) {
+//            // Phong shading
+//            color = getLightPhong(hitPos, rayDir, objectID);
+//        } else {
+//            // PBR shading
+//            color = getLightPBR(hitPos, rayDir, objectID);
+//        }
+//
+//        // Apply fog
+//        vec3 sunDir = normalize(vec3(0.5, 0.8, 0.2));
+//        color = applyFog(color, dist, rayDir, sunDir);
+//    }
+//
+//    // 3) add micro-dither to suppress any residual posterization
+////    float d = (fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233))) * 43758.5453) - 0.5) / 255.0;
+////    color += d;
+//
+//    // Gamma correction
+//    color = pow(color, vec3(1.0/2.2));
+//
+//    // Output final color
+//    imageStore(resultImage, pixel, vec4(color, 1.0));
+//}

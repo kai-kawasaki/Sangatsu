@@ -25,9 +25,9 @@
 #include <thread>
 #include <BVH.h>
 
-static constexpr float kMaxTraceDistance   = 100.0f;
-static constexpr float kHalfSize           = 0.865f;
-static constexpr float kRadius             = glm::sqrt(3.0f) * kHalfSize;
+// static constexpr float kMaxTraceDistance   = 100.0f;
+// static constexpr float kHalfSize           = 0.865f;
+// static constexpr float kRadius             = glm::sqrt(3.0f) * kHalfSize;
 
 void logOpenGLInfo() {
     const GLubyte* vendor = glGetString(GL_VENDOR);
@@ -92,8 +92,7 @@ Application::Application(int w, int h, const char* t) {
 
     // 5) Load shaders, textures, SSBO, ray-marcher
     _shader = std::make_unique<Shader>(
-        (std::string(SHADERS_DIR) + "/window.glsl").c_str(),
-        (std::string(SHADERS_DIR) + "/render.glsl").c_str()
+        (std::string(SHADERS_DIR) + "/render.comp").c_str()
     );
 
     _texture = std::make_unique<Texture>(
@@ -147,9 +146,10 @@ Application::Application(int w, int h, const char* t) {
 
     _ssbo       = std::make_unique<SSBOManager>(_objects);
     _rayMarcher = std::make_unique<RayMarcher>(*_shader);
-    _rayMarcher->init();
     _fbo = std::make_unique<FBOManager>(w, h);
-    _fbo->bind();
+    GLuint colorTex = _fbo->getColorTexture();
+    glBindImageTexture(0, colorTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+    // _fbo->bind();
     bvh.generateSSBO();
 
     // ——— Disable culling: render all objects ———
@@ -280,11 +280,11 @@ void Application::loop() {
         int windowW, windowH;
         glfwGetWindowSize(win, &windowW, &windowH);
 
-        _fbo->bind();
+        // 1) Query FBO size
         int fbW = _fbo->getWidth();
         int fbH = _fbo->getHeight();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // 2) Dispatch the compute pass
         _rayMarcher->render(
             static_cast<float>(fbW),
             static_cast<float>(fbH),
@@ -294,23 +294,21 @@ void Application::loop() {
             _camera->target(),
             flashlightOn,
             renderMode,
-            0,
-            sunPosition, // Use the calculated sun position
+            0,              // textureID is now unused
+            sunPosition,
             _visibleIndices.size()
         );
 
-        _fbo->unbind();
-        glDrawBuffer(GL_BACK);
-        glUseProgram(0);
-        glViewport(0, 0, windowW, windowH);
-        glClear(GL_COLOR_BUFFER_BIT);
-
+        // 3) Blit the compute-written texture to the screen
         glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->getFBO());
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBlitFramebuffer(0, 0, fbW, fbH, 0, 0, windowW, windowH,
-                          GL_COLOR_BUFFER_BIT,
-                          GL_NEAREST);
-
+        glBlitFramebuffer(
+            0, 0, fbW, fbH,
+            0, 0, windowW, windowH,
+            GL_COLOR_BUFFER_BIT,
+            GL_NEAREST
+        );
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         glfwSwapBuffers(win);

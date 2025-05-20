@@ -15,7 +15,6 @@ public:
     RayMarcher(Shader& shader);
     ~RayMarcher();
 
-    void init();
     void render(float width, float height,
                 float time, float scroll,
                 const glm::vec3& camPos,
@@ -28,12 +27,6 @@ public:
 
 private:
     Shader& _shader;
-    GLuint _vao, _vbo;
-
-    static inline const Vertex _quad[6] = {
-        {{-1,-1,0},{1,0,0}},{{1,-1,0},{0,1,0}},{{1,1,0},{0,0,1}},
-        {{-1,-1,0},{1,0,0}},{{1,1,0},{0,0,1}},{{-1,1,0},{1,1,0}}
-    };
 };
 
 #endif //RAYMARCHER_H

@@ -14,16 +14,20 @@ class FBOManager {
 public:
     FBOManager(int width, int height);
     ~FBOManager();
+
     void bind() const;
     void unbind() const;
+
     void resize(int width, int height);
+
     int getWidth() const { return _width; }
     int getHeight() const { return _height; }
+
+    GLuint getColorTexture() const { return _colorTex; }
     GLuint getFBO() const { return _fbo; }
 private:
     GLuint _fbo = 0;
     GLuint _colorTex = 0;
-    GLuint _depthTex = 0;
     int    _width;
     int    _height;
 };

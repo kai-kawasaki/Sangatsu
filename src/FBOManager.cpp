@@ -5,34 +5,43 @@
 #include "FBOManager.h"
 #include <iostream>
 
-FBOManager::FBOManager(const int width, const int height) : _width(width), _height(height) {
+FBOManager::FBOManager(int width, int height)
+    : _width(width), _height(height)
+{
+    // 1) Generate and bind FBO
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
 
+    // 2) Create color texture
     glGenTextures(1, &_colorTex);
     glBindTexture(GL_TEXTURE_2D, _colorTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, _width, _height, 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, _width, _height,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           GL_TEXTURE_2D, _colorTex, 0);
 
-    glGenRenderbuffers(1, &_depthTex);
-    glBindRenderbuffer(GL_RENDERBUFFER, _depthTex);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, _width, _height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-                               GL_RENDERBUFFER, _depthTex);
+    // 3) Attach texture to FBO
+    glFramebufferTexture2D(GL_FRAMEBUFFER,
+                           GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D,
+                           _colorTex,
+                           0);
 
+    // 4) Specify draw buffers
+    GLenum drawBufs[1] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, drawBufs);
+
+    // 5) Check completeness
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cerr << "Framebuffer is not complete!" << std::endl;
+        std::cerr << "[FBOManager] Framebuffer not complete!" << std::endl;
     }
+
+    // 6) Unbind
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 FBOManager::~FBOManager() {
     glDeleteTextures(1, &_colorTex);
-    glDeleteRenderbuffers(1, &_depthTex);
     glDeleteFramebuffers(1, &_fbo);
 }
 
@@ -53,6 +62,4 @@ void FBOManager::resize(int width, int height) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, _width, _height, 0,
                  GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-    glBindRenderbuffer(GL_RENDERBUFFER, _depthTex);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, _width, _height);
 }
