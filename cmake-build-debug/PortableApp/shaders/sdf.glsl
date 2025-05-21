@@ -5,6 +5,7 @@ float getObjectRaw(Object object, vec3 pos);
 float getObject(Object object, vec3 pos);
 vec2 calcSDF(vec3 pos);
 vec3 getPrimitiveNormal(Object object, vec3 pos);
+vec3 analyticNormal(Object object, vec3 p);
 float sampleDisplacement(vec3 pos, vec3 N, int heightLayer, float scale);
 vec4 getNormal(vec3 pos);
 // ----------------------------------------------------------------------------
@@ -41,7 +42,7 @@ float getObject(Object object, vec3 pos) {
     // 4b) if there's a height map, push the surface along the primitive normal
     if (object.heightID >= 0) {
         // numerically computed primitive normal
-        vec3 N = getPrimitiveNormal(object, pos);
+        vec3 N = analyticNormal(object, pos);
 
         // sample [0..1] → center around zero
         float h = sampleDisplacement(pos, N, object.heightID, object.textureScale) - 0.5;
@@ -230,14 +231,58 @@ vec3 getPrimitiveNormal(Object object, vec3 pos) {
                      ));
 }
 
+vec3 analyticNormal(Object object, vec3 p) {
+    // compute local-space point
+    vec3 lp = p - vec3(object.x, object.y, object.z);
+    switch (object.objectType) {
+        case 0: // Box
+        {
+            vec3 b = vec3(object.i, object.j, object.k);
+            // normal is the sign of the largest component of abs(lp) - b
+            vec3 d = abs(lp) - b;
+            if (d.x > d.y && d.x > d.z) return vec3(sgn(lp.x), 0, 0);
+            if (d.y > d.z)            return vec3(0, sgn(lp.y), 0);
+            return                           vec3(0, 0, sgn(lp.z));
+        }
+        case 1: // Sphere
+        return normalize(lp);
+        case 2: // Cylinder (infinite along Y)
+        // fCylinder is max(length(lp.xz)-r, abs(lp.y)-h)
+        // lateral normal:
+        if (abs(lp.y) < object.j) {
+            return normalize(vec3(lp.x, 0, lp.z));    // side
+        } else {
+            return vec3(0, sgn(lp.y), 0);             // caps
+        }
+        case 3: // Cone
+        {
+            // For a right circular cone aligned on Y:
+            // normal = normalize( vec3(lp.x, lp.y * (radius/height), lp.z) );
+            float r = object.i, h = object.j;
+            return normalize(vec3(lp.x, r/h * length(lp.xz), lp.z * r/h) );
+        }
+        case 4: // (e.g. Torus if you add it)
+        // Approximate: project to ring
+        // ...
+        // add more cases as needed
+        default:
+        // fallback: numerical (just once)
+        return getPrimitiveNormal(object, p);
+    }
+    return vec3(0.0); // unreachable
+}
+
+
 vec4 getNormal(vec3 pos) {
     vec2 dist = calcSDF(pos);
-    vec2 e = vec2(EPSILON, 0.0);
-
-    vec3 normal = dist.x - vec3(
-    calcSDF(pos-e.xyy).x,
-    calcSDF(pos-e.yxy).x,
-    calcSDF(pos-e.yyx).x);
-
-    return vec4(normalize(normal), dist.y);
+    vec3 rawNormal = analyticNormal(allObjects[int(dist.y)], pos);
+    return vec4(rawNormal, dist.y);
+//    vec2 e = vec2(EPSILON, 0.0);
+//
+//    vec3 normal = dist.x - vec3(
+//    calcSDF(pos-e.xyy).x,
+//    calcSDF(pos-e.yxy).x,
+//    calcSDF(pos-e.yyx).x);
+//
+//    return vec4(normalize(normal), dist.y);
 }

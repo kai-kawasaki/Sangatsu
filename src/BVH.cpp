@@ -94,6 +94,12 @@ AABB BVHBuilder::computeBounds(int objIdx, const Object &o) {
             break;
         }
     }
+
+    if (o.heightID >= 0 && o.displacementStrength > 0.0f) {
+        b.min -= glm::vec3(o.displacementStrength);
+        b.max += glm::vec3(o.displacementStrength);
+    }
+
     return b;
 }
 

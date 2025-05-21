@@ -7,9 +7,6 @@ struct Object {
     float blendRadius;
     int groupLength;
     int materialID;
-    int textureXY;
-    int textureXZ;
-    int textureYZ;
     float textureScale;
     // PBR texture layers
     int albedoID;

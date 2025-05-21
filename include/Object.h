@@ -20,9 +20,6 @@ struct Object {
     float blendRadius;
     int groupLength;
     int materialID;
-    int textureXY; // texture ID for XY plane (side)
-    int textureXZ; // texture ID for XZ plane (top)
-    int textureYZ; // texture ID for YZ plane (front)
     float textureScale;
     int albedoID;
     int normalID;
