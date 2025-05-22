@@ -102,39 +102,7 @@ PBRMaps triPlanarPBR(
     }
     // Always flip Y in texture space
     uvYZ.y = 1.0 - uvYZ.y;
-
-    // 4) Debug weights - uncomment to diagnose face mapping
-    // Output weights as colors to check orientation
-/*
-    PBRMaps debug;
-    debug.albedo = vec3(w.x, w.y, w.z);
-    debug.normalRGB = vec3(0.5, 0.5, 1.0);
-    debug.metallic = 0.0;
-    debug.roughness = 0.5;
-    debug.ao = 1.0;
-    debug.height = 0.0;
-    return debug;
-    */
-
-    // 4) Parallax occlusion on each UV if height map is provided
-    //    if (heightLayer >= 0) {
-    //        float hXY = texture(arr, vec3(uvXY, heightLayer)).r;
-    //        float hXZ = texture(arr, vec3(uvXZ, heightLayer)).r;
-    //        float hYZ = texture(arr, vec3(uvYZ, heightLayer)).r;
-    //
-    //        // Project viewDir into each plane
-    //        vec2 vXY = normalize(viewDir.xy);
-    //        vec2 vXZ = normalize(viewDir.xz);
-    //        vec2 vYZ = normalize(viewDir.yz);
-    //
-    //        // Apply parallax offset
-    //        float parallaxScale = 0.05 * scale; // Adjust parallax strength
-    //        uvXY = uvXY - vXY * (hXY * parallaxScale / max(dot(n, viewDir), 0.01));
-    //        uvXZ = uvXZ - vXZ * (hXZ * parallaxScale / max(dot(n, viewDir), 0.01));
-    //        uvYZ = uvYZ - vYZ * (hYZ * parallaxScale / max(dot(n, viewDir), 0.01));
-    //    }
-
-    // 5) Initialize PBR maps
+    
     PBRMaps m;
 
     // Sample and blend each map (only if valid layer ID)

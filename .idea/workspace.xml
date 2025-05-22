@@ -30,30 +30,18 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Ray Intersected BVH, but black flickering artifact.">
+    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="commit of agony and despair.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Object.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/SSBOManager.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/main.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/opengl-mingw-boilerplate.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/common.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/common.glsl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/lighting.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/lighting.glsl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/render.glsl" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/sdf.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/sdf.glsl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/PortableApp/shaders/window.glsl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/include/Object.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/Object.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shaders/common.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/common.glsl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shaders/lighting.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/lighting.glsl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shaders/mapping.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/mapping.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shaders/render.comp" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/render.comp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shaders/sdf.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/sdf.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Application.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Application.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/BVH.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/BVH.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Object.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Globals.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Globals.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -230,7 +218,7 @@
       <workItem from="1747422250098" duration="25000" />
       <workItem from="1747461657605" duration="756000" />
       <workItem from="1747471452766" duration="11000" />
-      <workItem from="1747846181694" duration="15212000" />
+      <workItem from="1747846181694" duration="26193000" />
     </task>
     <task id="LOCAL-00001" summary="Fixed SSBOs for object positions saved in C++ for shader use.">
       <option name="closed" value="true" />
@@ -384,7 +372,15 @@
       <option name="project" value="LOCAL" />
       <updated>1746864015048</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="commit of agony and despair.">
+      <option name="closed" value="true" />
+      <created>1747866696650</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1747866696650</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -424,6 +420,7 @@
     <MESSAGE value="BVH elements passed to shader as SSBO." />
     <MESSAGE value="CalcSDF using BVH. Still slow." />
     <MESSAGE value="Ray Intersected BVH, but black flickering artifact." />
-    <option name="LAST_COMMIT_MESSAGE" value="Ray Intersected BVH, but black flickering artifact." />
+    <MESSAGE value="commit of agony and despair." />
+    <option name="LAST_COMMIT_MESSAGE" value="commit of agony and despair." />
   </component>
 </project>
