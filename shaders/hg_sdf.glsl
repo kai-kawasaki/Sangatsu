@@ -697,7 +697,7 @@ float fOpTongue(float a, float b, float ra, float rb) {
 
 // SDFs added by Kyle Zagers and Kai Vedder.
 
-float mandelbulb( in vec3 p, out vec4 resColor )
+float mandelbulb( in vec3 p, float size, out vec4 resColor )
 {
     vec3 w = p;
     float m = dot(w,w);
@@ -770,4 +770,29 @@ float fMenger(vec3 point, int degree, float size) {
         d = max(d,c);
     }
     return d*size;
+}
+
+float fMandelbulb(vec3 p, float size) {
+	vec3 w = p / size;
+	float m = dot(w,w);
+	float dz = 1.0;
+
+	// Using 4 iterations for performance as in your existing implementation
+	for (int i = 0; i < 4; i++) {
+		// Trigonometric version (faster than polynomial)
+		dz = 8.0 * pow(m, 3.5) * dz + 1.0;
+
+		// z = z^8 + c
+		float r = length(w);
+		float b = 8.0 * acos(w.y / r);
+		float a = 8.0 * atan(w.x, w.z);
+		w = p / size + pow(r, 8.0) * vec3(sin(b) * sin(a), cos(b), sin(b) * cos(a));
+
+		m = dot(w,w);
+		if (m > 256.0)
+		break;
+	}
+
+	// Distance estimation using Hubbard-Douady potential
+	return 0.25 * log(m) * sqrt(m) / dz * size;
 }

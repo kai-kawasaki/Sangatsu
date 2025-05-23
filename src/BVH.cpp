@@ -88,6 +88,12 @@ AABB BVHBuilder::computeBounds(int objIdx, const Object &o) {
             b.max = p + glm::vec3(o.scale.x);
             break;
         }
+        case 11: {
+            float r = o.scale.x * 2.0f;
+            b.min = p - glm::vec3(r);
+            b.max = p + glm::vec3(r);
+            break;
+        }
         default: {
             b.min = p;
             b.max = p;

@@ -102,17 +102,17 @@ Application::Application(int w, int h, const char* t) {
 
     // initial voxel list
     _objects = {
-        Object({4, 1, 3}, glm::vec3(0.5f), 0, {0, 1, 0}),
+        Object({4, 1, 3}, glm::vec3(0.5f), 10, {0, 1, 0}),
         // Object({4, 2, 5}, glm::vec3(0.5f), 1, 1, 2, 1, 0.5),
         // Object({0, 10, 0}, glm::vec3(0.5f), 10, {0, 1, 0}),
         Object({5, 5, 6}, glm::vec3(0.5f), 0, {0, 0, 1}/*, 1, 0.5, 1*/),
         Object({6, 5, 6}, glm::vec3(0.5f), 0, {1, 1, 0}/*, 1, 0.5, 0*/),
         Object({0, 0, 0}, {10,0.5,10}, 0, {0, 1, 0}),
-        // Object({0, 0, 0}, {10,0.5,10}, 0, 1, "patchy-meadow1", *_texture, 0.75f, 0.001f),
+        // Object({0, 0, 0}, {10,0.5,10}, 0, 1, "stylized-grass1", *_texture, 0.75f, 0.1f),
         // Object({7,7,7}, glm::vec3(0.5), 1, 1, "vertical-streak-cliff", *_texture, 0.25f, 0.01f),
-        Object({5, 5, 1}, glm::vec3(1.0f), 0, {0.761, 0, 1}/*, 5, 0.3f, 1*/),
+        Object({5, 5, 1}, glm::vec3(1.0f), 11, {0.761, 0, 1}/*, 5, 0.3f, 1*/),
         Object({1, 1, 1}, glm::vec3(0.5f), 0, {0.7, 0, 1}/*, 5, 0.3f*/),
-        Object({1, 3, 8}, glm::vec3(0.5f), 0, {0.7, 0.5, 1}/*, 5, 0.3f*/),
+        Object({1, 3, 8}, glm::vec3(0.5f), 2, {0.7, 0.5, 1}/*, 5, 0.3f*/),
         Object({4, 1, 1}, glm::vec3(0.5f), 0, {1, 0, 1}/*, 5, 0.3f*/),
         Object({4, 1, 5}, glm::vec3(0.5f), 1, {0.5, 1, 1}/*, 5, 0.3f*/),
         Object({5, 4, 4}, glm::vec3(0.5f), 0, 1, "chiseled-cobble", *_texture, 0.75f, 0.3f/*, 1, 0.5, 1*/),

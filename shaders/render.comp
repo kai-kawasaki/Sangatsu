@@ -30,13 +30,17 @@ vec2 intersectAABB(vec3 ro, vec3 invRd, vec3 bMin, vec3 bMax) {
 }
 
 // Optimized sphere tracing with adaptive stepping
-float sphereTrace(vec3 ro, vec3 rd, float tMin, float tMax) {
+float sphereTrace(vec3 ro, vec3 rd, float tMin, float tMax, int nodeIdx) {
     float t = tMin;
+
+    BVHNode node = nodes[nodeIdx];
+    int start = node.child.z;
+    int count = node.child.w;
 
     // Unrolled first few iterations for better performance
     for(int i = 0; i < 4; ++i) {
         vec3 pos = ro + rd * t;
-        float d = calcSDF(pos).x;
+        float d = calcSDF(pos, start, count);
 
         if(d < MIN_DIST_TO_SDF) return t;
         if(t > tMax) return -1.0;
@@ -47,7 +51,7 @@ float sphereTrace(vec3 ro, vec3 rd, float tMin, float tMax) {
     // Continue with remaining iterations
     for(int i = 4; i < MAX_STEPS; ++i) {
         vec3 pos = ro + rd * t;
-        float d = calcSDF(pos).x;
+        float d = calcSDF(pos, start, count);
 
         if(d < MIN_DIST_TO_SDF) return t;
         if(t > tMax) break;
@@ -89,7 +93,7 @@ float traceBVH(vec3 ro, vec3 rd) {
             float tEnd = min(tBox.y, closestHit);
 
             if(tStart < tEnd) {
-                float hit = sphereTrace(ro, rd, tStart, tEnd);
+                float hit = sphereTrace(ro, rd, tStart, tEnd, nodeIdx);
                 if(hit > 0.0 && hit < closestHit) {
                     closestHit = hit;
                 }
