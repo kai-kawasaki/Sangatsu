@@ -30,22 +30,15 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="simplifying for less realism and more efficient stylization.">
+    <list default="true" id="01d2087f-e8fc-418e-acba-8606fddb569a" name="Changes" comment="Efficiency changes. Huge performance increase.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Application.cpp.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/opengl-mingw-boilerplate.dir/src/Globals.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/bin/opengl-mingw-boilerplate.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shaders/hg_sdf.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/hg_sdf.glsl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shaders/lighting.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/lighting.glsl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shaders/mapping.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/mapping.glsl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shaders/render.comp" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/render.comp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shaders/sdf.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/sdf.glsl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Application.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Application.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/BVH.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/BVH.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Globals.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Globals.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -223,7 +216,7 @@
       <workItem from="1747422250098" duration="25000" />
       <workItem from="1747461657605" duration="756000" />
       <workItem from="1747471452766" duration="11000" />
-      <workItem from="1747846181694" duration="32560000" />
+      <workItem from="1747846181694" duration="37664000" />
     </task>
     <task id="LOCAL-00001" summary="Fixed SSBOs for object positions saved in C++ for shader use.">
       <option name="closed" value="true" />
@@ -393,7 +386,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747906129104</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="Efficiency changes. Huge performance increase.">
+      <option name="closed" value="true" />
+      <created>1747960419832</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1747960419832</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -435,6 +436,7 @@
     <MESSAGE value="Ray Intersected BVH, but black flickering artifact." />
     <MESSAGE value="commit of agony and despair." />
     <MESSAGE value="simplifying for less realism and more efficient stylization." />
-    <option name="LAST_COMMIT_MESSAGE" value="simplifying for less realism and more efficient stylization." />
+    <MESSAGE value="Efficiency changes. Huge performance increase." />
+    <option name="LAST_COMMIT_MESSAGE" value="Efficiency changes. Huge performance increase." />
   </component>
 </project>

@@ -90,3 +90,8 @@ vec2 maxID(vec2 a, vec2 b) {
 vec3 unpackNormal(vec3 rgb) {
     return normalize(rgb * 2.0 - 1.0);
 }
+
+struct HitInfo {
+    float distance;
+    int objectID;
+};

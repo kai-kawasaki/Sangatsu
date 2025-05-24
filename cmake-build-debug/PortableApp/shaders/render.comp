@@ -1,0 +1,379 @@
+#version 430 core
+
+//forward declarations
+vec2 intersectRayAABB(vec3 ro, vec3 rd, vec3 bMin, vec3 bMax);
+float sphereTraceSegment(vec3 ro, vec3 rd, float t0, float t1);
+float traceBVH(vec3 ro, vec3 rd);
+vec3 rCam(vec2 offset);
+vec3 applyFog(vec3 color, float distance, vec3 rayDir, vec3 sunDir);
+vec2 getUV(vec2 offset);
+
+#include "common.glsl"
+#include "sdf.glsl"
+#include "mapping.glsl"
+#include "lighting.glsl"
+
+layout (local_size_x = 8, local_size_y = 8) in;
+layout (binding = 0, rgba32f) uniform writeonly image2D resultImage;
+
+//float rMarch(vec3 rOrig, vec3 rDir) {
+//    float dOrig = 0.0; // distance from ray origin
+//
+//    for(int i=0; i<MAX_STEPS; i++) {
+//        vec3 rPos = rOrig + rDir * dOrig;
+//        float dSurf = calcSDF(rPos).x;
+//        dOrig += dSurf;
+//
+//        if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF*clamp(((dOrig*dOrig-3)*LOD_MULTIPLIER),1,MAX_DIST_TO_TRAVEL*MAX_DIST_TO_TRAVEL*LOD_MULTIPLIER)) break;
+//        //if(dOrig > MAX_DIST_TO_TRAVEL || abs(dSurf) < MIN_DIST_TO_SDF) break;
+//    }
+//
+//    return dOrig;
+//}
+
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+// 1) Ray ⇔ AABB slab test, returns (tEnter, tExit)
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+vec2 intersectRayAABB(vec3 ro, vec3 rd, vec3 bMin, vec3 bMax) {
+    // Handle zero components in ray direction
+    vec3 invR = vec3(
+    abs(rd.x) < 1e-6 ? 1e6 * sign(rd.x) : 1.0 / rd.x,
+    abs(rd.y) < 1e-6 ? 1e6 * sign(rd.y) : 1.0 / rd.y,
+    abs(rd.z) < 1e-6 ? 1e6 * sign(rd.z) : 1.0 / rd.z
+    );
+
+    vec3 t0s = (bMin - ro) * invR;
+    vec3 t1s = (bMax - ro) * invR;
+    vec3 tMin = min(t0s, t1s);
+    vec3 tMax = max(t0s, t1s);
+
+    float tEnter = max(max(tMin.x, tMin.y), tMin.z);
+    float tExit = min(min(tMax.x, tMax.y), tMax.z);
+
+    // Handle special case when ray origin is inside box
+    if (ro.x >= bMin.x && ro.x <= bMax.x &&
+    ro.y >= bMin.y && ro.y <= bMax.y &&
+    ro.z >= bMin.z && ro.z <= bMax.z) {
+        tEnter = 0.0;
+    }
+
+    return vec2(tEnter, tExit);
+}
+
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+// 2) Sphere-trace *only* in [t0,t1].  Returns >0 on hit, else −1
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+float sphereTraceSegment(vec3 ro, vec3 rd, float t0, float t1) {
+    float t = max(t0, 0.0);
+    for(int i = 0; i < MAX_STEPS; i++) {
+        if (t > t1) break;
+        vec3 pos = ro + rd * t;
+        float d = calcSDF(pos).x;
+//        if(t > MAX_DIST_TO_TRAVEL || abs(d) < MIN_DIST_TO_SDF*clamp(((t*t-3)*LOD_MULTIPLIER),1,MAX_DIST_TO_TRAVEL*MAX_DIST_TO_TRAVEL*LOD_MULTIPLIER)) return t;
+        if (d < MIN_DIST_TO_SDF) return t;
+        t += d;
+
+        float lodStep = clamp((t * t - 3) * LOD_MULTIPLIER, 1, MAX_DIST_TO_TRAVEL * MAX_DIST_TO_TRAVEL * LOD_MULTIPLIER);
+        float eps = EPSILON * lodStep;
+        if (t > MAX_DIST_TO_TRAVEL || abs(d) < eps) {
+            // If we are close to the surface, return the distance
+            return t;
+        }
+    }
+    return -1.0;
+}
+
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+// 3) Full BVH‐based ray tracer: returns first hit distance or MAX_DIST
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+float traceBVH(vec3 ro, vec3 rd) {
+    // Early exit for degenerate rays
+    if (dot(rd, rd) < EPSILON) return MAX_DIST_TO_TRAVEL;
+
+    float tHit = MAX_DIST_TO_TRAVEL;
+
+    // Fixed-size stack for traversal
+    const int maxStackSize = 64;
+    int stack[64];
+    int stackPtr = 0;
+
+    // Push root node
+    stack[stackPtr++] = 0;
+
+    // Main traversal loop - process until stack is empty
+    while (stackPtr > 0) {
+        // Pop node index from stack
+        int nodeIdx = stack[--stackPtr];
+
+        // Bounds check
+        if (nodeIdx < 0 || nodeIdx >= nodes.length()) continue;
+
+        // Fetch current node
+        BVHNode node = nodes[nodeIdx];
+
+        // Test ray against node's AABB
+        vec3 boxMin = node.boundsMin.xyz;
+        vec3 boxMax = node.boundsMax.xyz;
+
+        // Skip invalid boxes
+        if (any(lessThan(boxMax, boxMin))) continue;
+
+        // Ray-box intersection
+        vec2 tBox = intersectRayAABB(ro, rd, boxMin, boxMax);
+
+        // Skip if no intersection or behind current closest hit
+        if (tBox.x > tBox.y || tBox.y < 0.0 || tBox.x > tHit) continue;
+
+        // Is this a leaf node?
+        if (node.child.x < 0) {
+            const float RAY_BIAS = MIN_DIST_TO_SDF * 2.0;
+            // It's a leaf - do sphere tracing within the box bounds
+            float t0 = max(tBox.x, RAY_BIAS);    // Start at ray entry or origin
+            float t1 = min(tBox.y, tHit);   // End at ray exit or current hit
+
+            // Only trace if there's a valid segment
+            if (t0 < t1) {
+                float hitDist = sphereTraceSegment(ro, rd, t0, t1);
+                if (hitDist > RAY_BIAS && hitDist < tHit) {
+                    tHit = hitDist;
+                }
+            }
+        }
+        else {
+            // Not a leaf - process children
+            int leftChild = node.child.x;
+            int rightChild = node.child.y;
+
+            // Make sure indices are valid
+            if (leftChild >= 0 && leftChild < nodes.length() &&
+            rightChild >= 0 && rightChild < nodes.length()) {
+
+                // Process children in near-to-far order
+                // First get the entry distances for both children
+                BVHNode leftNode = nodes[leftChild];
+                BVHNode rightNode = nodes[rightChild];
+
+                vec2 leftBox = intersectRayAABB(ro, rd, leftNode.boundsMin.xyz, leftNode.boundsMax.xyz);
+                vec2 rightBox = intersectRayAABB(ro, rd, rightNode.boundsMin.xyz, rightNode.boundsMax.xyz);
+
+                float leftDist = leftBox.x;
+                float rightDist = rightBox.x;
+
+                // Check if we should even consider these nodes
+                bool traverseLeft = leftBox.x <= leftBox.y && leftBox.y >= 0.0 && leftBox.x < tHit;
+                bool traverseRight = rightBox.x <= rightBox.y && rightBox.y >= 0.0 && rightBox.x < tHit;
+
+                // Push in reverse order (farther first, so nearest gets processed first)
+                if (leftDist > rightDist) {
+                    // Right is closer, push left first (processed second)
+                    if (traverseLeft && stackPtr < maxStackSize) stack[stackPtr++] = leftChild;
+                    if (traverseRight && stackPtr < maxStackSize) stack[stackPtr++] = rightChild;
+                } else {
+                    // Left is closer, push right first (processed second)
+                    if (traverseRight && stackPtr < maxStackSize) stack[stackPtr++] = rightChild;
+                    if (traverseLeft && stackPtr < maxStackSize) stack[stackPtr++] = leftChild;
+                }
+            }
+        }
+    }
+
+    return tHit;
+}
+
+
+vec2 getUV(vec2 offset) {
+    vec2 uv = (gl_GlobalInvocationID.xy / u_resolution.xy) * 2.0 - 1.0;
+    uv.x *= u_resolution.x / u_resolution.y;
+    uv += offset;
+    return uv;
+}
+
+vec3 rCam(vec2 offset) {
+    vec2 uv = getUV(offset);
+    vec3 rOrig = u_camPos;
+    vec3 lookat = rOrig+u_camTarget;
+    float zoom = max(0.5,(u_scroll*0.05)+0.5);
+    vec3 forward = normalize(lookat-rOrig),
+    right = normalize(cross(forward, vec3(0, 1., 0))),
+    up = cross(right, forward),
+    center = forward*zoom,
+    intersection = center + uv.x*right + uv.y*up,
+    dir = normalize(intersection);
+    return dir;
+}
+
+vec3 applyFog(vec3 color, float distance, vec3 rayDir, vec3 sunDir) {
+    float fogAmount = 1.0 - exp(-distance * 0.00008);
+    float sunAmount = max(dot(rayDir, sunDir), 0.0);
+    vec3 fogColor = mix(
+        vec3(0.5, 0.6, 0.7), // base fog color
+        vec3(1.0, 0.9, 0.7), // sun tint
+        pow(sunAmount, 8.0)
+    );
+    return mix(color, fogColor, fogAmount);
+}
+
+vec3 renderScene(vec3 ro, vec3 rd) {
+    vec3 finalColor = vec3(0.0);
+    vec3 throughput = vec3(1.0);  // How much light gets through at each bounce
+
+    // Perform primary ray tracing
+    float t = traceBVH(ro, rd);
+
+    // If we hit something
+    if (t < MAX_DIST_TO_TRAVEL) {
+        vec3 pos = ro + rd * t;
+        vec4 normalData = getNormal(pos);
+        vec3 normal = normalData.xyz;
+        int objID = int(normalData.w);
+        Object obj = allObjects[objID];
+
+        // Get PBR material properties
+        PBRMaps maps = triPlanarPBR(
+            textureArray,
+            pos,
+            normal,
+            obj.textureScale,
+            obj.albedoID,
+            obj.normalID,
+            obj.metallicID,
+            obj.roughnessID,
+            obj.aoID,
+            obj.heightID,
+            -rd
+        );
+
+        // Calculate base lighting
+        vec3 directLight = getLightPBR(pos, rd, objID, maps);
+        finalColor = directLight;
+
+        // Only do reflections if REFLECTIONS is enabled AND metallic value is significant
+        if (REFLECTIONS && maps.metallic > 0.1) {
+            vec3 reflectedRay = rd;
+            reflectRay(reflectedRay, normal);
+
+            // Apply roughness - blur the reflection direction slightly for rough surfaces
+            if (maps.roughness > 0.0) {
+                // Simple approximation - more advanced techniques would use a proper BRDF
+                float roughnessFactor = maps.roughness * 0.3;
+                reflectedRay = normalize(reflectedRay + roughnessFactor * (fract(sin(dot(pos, vec3(12.9898, 78.233, 45.164))) * 43758.5453) - 0.5));
+            }
+
+            // Trace reflection ray
+            float reflectDist = traceBVH(pos + normal * 0.01, reflectedRay);
+
+            // If reflection hit something
+            if (reflectDist < MAX_DIST_TO_TRAVEL) {
+                vec3 reflectPos = pos + normal * 0.01 + reflectedRay * reflectDist;
+
+                // Get normal and material ID at reflection point
+                vec4 reflectNormalData = getNormal(reflectPos);
+                vec3 reflectNormal = reflectNormalData.xyz;
+                int reflectObjID = int(reflectNormalData.w);
+                Object reflectObj = allObjects[reflectObjID];
+
+                // Recalculate maps for the reflection point
+                PBRMaps reflectMaps = triPlanarPBR(
+                textureArray,
+                reflectPos,
+                reflectNormal,
+                reflectObj.textureScale,
+                reflectObj.albedoID,
+                reflectObj.normalID,
+                reflectObj.metallicID,
+                reflectObj.roughnessID,
+                reflectObj.aoID,
+                reflectObj.heightID,
+                -reflectedRay
+                );
+
+                // Use the reflection point's materials for lighting
+                vec3 reflectedColor = getLightPBR(reflectPos, reflectedRay, reflectObjID, reflectMaps);
+
+                // Use metallic value to control reflection strength
+                float reflectionStrength = REFLECTIONSTRENGTH * maps.metallic * (1.0 - maps.roughness * 0.5);
+                finalColor = mix(finalColor, reflectedColor, reflectionStrength);
+            } else {
+                // Reflection hit sky/environment
+                vec3 skyColor = vec3(0.6, 0.7, 0.9); // Simple sky color
+                float reflectionStrength = REFLECTIONSTRENGTH * maps.metallic * (1.0 - maps.roughness * 0.5);
+                finalColor = mix(finalColor, skyColor, reflectionStrength);
+            }
+        }
+    } else {
+        // Ray hit nothing - render sky/environment
+        finalColor = vec3(0.6, 0.7, 0.9); // Simple sky color
+    }
+
+    return finalColor;
+}
+
+
+void main() {
+    // Get pixel coordinates
+    vec2 offset = vec2(0.0); // For anti-aliasing if needed
+    vec3 rd = rCam(offset);
+    vec3 ro = u_camPos;
+
+    // Render the scene
+    vec3 color = renderScene(ro, rd);
+
+    // Apply post-processing
+    color = applyFog(color, length(ro - (ro + rd * traceBVH(ro, rd))), rd, normalize(u_lightPos));
+
+    // Output the final color
+    imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1.0));
+}
+
+
+
+//void main() {
+////    vec2 fragCoord = gl_FragCoord.xy;
+////    vec2 uv = fragCoord/u_resolution.xy;
+//    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+//    vec2 uv = (vec2(pixel) / u_resolution.xy) * 2.0 - 1.0;
+//    vec2 p = uv * 2.0 - 1.0;
+//    p.x *= u_resolution.x / u_resolution.y;
+//
+//    // Camera setup (OLD SYSTEM)
+//    vec3 cameraPos = u_camPos;
+//    vec3 rayDir = rCam(vec2(0.0));
+//
+//    // Ray marching
+//    float dist = traceBVH(cameraPos, rayDir);
+//
+//    // Initialize color
+//    float t = 0.5 * (1.0 + rayDir.y);
+//    vec3 color = mix(vec3(1.0), vec3(0.15, 0.3, 1.0), t);
+//
+//    if (dist < MAX_DIST_TO_TRAVEL) {
+//        // Hit point
+//        vec3 hitPos = cameraPos + rayDir * dist;
+//
+//        // Get object ID that was hit
+//        float objectID = calcSDF(hitPos).y;
+//
+//        // Choose shading method based on render mode
+//        if (u_renderMode == 0) {
+//            // Phong shading
+////            color = getLightPhong(hitPos, rayDir, objectID);
+//        } else {
+//            // PBR shading
+//            color = getLightPBR(hitPos, rayDir, objectID);
+//        }
+//
+//        // Apply fog
+//        vec3 sunDir = normalize(vec3(0.5, 0.8, 0.2));
+//        color = applyFog(color, dist, rayDir, sunDir);
+//    }
+//
+//    // 3) add micro-dither to suppress any residual posterization
+////    float d = (fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233))) * 43758.5453) - 0.5) / 255.0;
+////    color += d;
+//
+//    // Gamma correction
+//    color = pow(color, vec3(1.0/2.2));
+//
+//    // Output final color
+//    imageStore(resultImage, pixel, vec4(color, 1.0));
+//}

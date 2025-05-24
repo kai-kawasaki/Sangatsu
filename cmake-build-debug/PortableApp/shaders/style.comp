@@ -1,0 +1,448 @@
+#version 430 core
+
+// Compute shader layout
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(binding = 0, rgba32f) uniform writeonly image2D resultImage;
+
+// Buffer structures
+struct Object {
+    float x, y, z;        // position
+    float r, g, b;        // color
+    float i, j, k;        // scale
+    int objectType;
+    int operation;
+    float blendRadius;
+    int groupLength;
+    int materialID;
+    float textureScale;
+// PBR texture layers
+    int albedoID;
+    int normalID;
+    int metallicID;
+    int roughnessID;
+    int aoID;
+    int heightID;
+    float displacementStrength;
+};
+
+struct BVHNode {
+    vec4 boundsMin;   // xyz = min,   w = unused
+    vec4 boundsMax;   // xyz = max,   w = unused
+    ivec4 child;      // x = left, y = right, z = start, w = count
+};
+
+struct Light {
+    float size;
+    vec3 pos;
+    vec3 col;
+    vec3 dir;
+    float focus;
+    float spread;
+};
+
+struct PBRMaps {
+    vec3 albedo;
+    vec3 normalRGB;
+    float metallic, roughness, ao, height;
+};
+
+struct RayHit {
+    float dist;
+    int objectID;
+    vec3 pos;
+    vec3 normal;
+    PBRMaps material;
+};
+
+// Buffers
+layout (std430, binding = 0) buffer VisibleObjects {
+    Object visibleObjects[];
+};
+
+layout (std430, binding = 1) buffer AllObjects {
+    Object allObjects[];
+};
+
+layout (std430, binding = 2) buffer BVHNodes {
+    BVHNode nodes[];
+};
+
+layout (std430, binding = 3) buffer BVHIndices {
+    int objectIndices[];
+};
+
+// Uniforms
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_scroll;
+uniform vec3 u_camPos;
+uniform vec3 u_camTarget;
+uniform int u_flashlight;
+uniform int u_renderMode;
+uniform int u_countObjects;
+uniform vec3 u_lightPos;
+
+uniform sampler2DArray textureArray;
+
+// Constants
+const float MAX_STEPS = 128.0;
+const float MIN_DIST_TO_SDF = 0.001;
+const float MAX_DIST_TO_TRAVEL = 100.0;
+const float EPSILON = 0.0001;
+const float LOD_MULTIPLIER = 0.06;
+const float PI = 3.14159265359;
+
+// Noise functions for stylized lighting
+float hash(float n) {
+    return fract(sin(n) * 43758.5453);
+}
+
+float noise(vec3 x) {
+    vec3 p = floor(x);
+    vec3 f = fract(x);
+    f = f * f * (3.0 - 2.0 * f);
+
+    float n = p.x + p.y * 57.0 + 113.0 * p.z;
+    return mix(mix(mix(hash(n), hash(n + 1.0), f.x),
+    mix(hash(n + 57.0), hash(n + 58.0), f.x), f.y),
+    mix(mix(hash(n + 113.0), hash(n + 114.0), f.x),
+    mix(hash(n + 170.0), hash(n + 171.0), f.x), f.y), f.z);
+}
+
+// SDF primitives
+float sdSphere(vec3 p, float r) {
+    return length(p) - r;
+}
+
+float sdBox(vec3 p, vec3 b) {
+    vec3 q = abs(p) - b;
+    return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+
+float sdTorus(vec3 p, vec2 t) {
+    vec2 q = vec2(length(p.xz) - t.x, p.y);
+    return length(q) - t.y;
+}
+
+float sdCylinder(vec3 p, vec3 c) {
+    return length(p.xz - c.xy) - c.z;
+}
+
+// Smooth operations
+float smin(float a, float b, float k) {
+    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+float smax(float a, float b, float k) {
+    return -smin(-a, -b, k);
+}
+
+// PBR texture sampling
+PBRMaps samplePBRMaps(Object obj, vec3 worldPos) {
+    PBRMaps maps;
+    vec3 localPos = (worldPos - vec3(obj.x, obj.y, obj.z)) / vec3(obj.i, obj.j, obj.k);
+    vec2 uv = localPos.xy * obj.textureScale;
+
+    // Sample textures with proper UV coordinates
+    if (obj.albedoID >= 0) {
+        maps.albedo = texture(textureArray, vec3(uv, obj.albedoID)).rgb;
+    } else {
+        maps.albedo = vec3(obj.r, obj.g, obj.b);
+    }
+
+    if (obj.normalID >= 0) {
+        maps.normalRGB = texture(textureArray, vec3(uv, obj.normalID)).rgb * 2.0 - 1.0;
+    } else {
+        maps.normalRGB = vec3(0.0, 0.0, 1.0);
+    }
+
+    if (obj.metallicID >= 0) {
+        maps.metallic = texture(textureArray, vec3(uv, obj.metallicID)).r;
+    } else {
+        maps.metallic = 0.1;
+    }
+
+    if (obj.roughnessID >= 0) {
+        maps.roughness = texture(textureArray, vec3(uv, obj.roughnessID)).r;
+    } else {
+        maps.roughness = 0.8;
+    }
+
+    if (obj.aoID >= 0) {
+        maps.ao = texture(textureArray, vec3(uv, obj.aoID)).r;
+    } else {
+        maps.ao = 1.0;
+    }
+
+    if (obj.heightID >= 0) {
+        maps.height = texture(textureArray, vec3(uv, obj.heightID)).r;
+    } else {
+        maps.height = 0.0;
+    }
+
+    return maps;
+}
+
+// BVH ray-box intersection
+bool rayAABBIntersect(vec3 rayPos, vec3 rayDir, vec3 boxMin, vec3 boxMax) {
+    vec3 invDir = 1.0 / (rayDir + vec3(1e-6));
+    vec3 t1 = (boxMin - rayPos) * invDir;
+    vec3 t2 = (boxMax - rayPos) * invDir;
+
+    vec3 tmin = min(t1, t2);
+    vec3 tmax = max(t1, t2);
+
+    float tNear = max(max(tmin.x, tmin.y), tmin.z);
+    float tFar = min(min(tmax.x, tmax.y), tmax.z);
+
+    return tNear <= tFar && tFar > 0.0;
+}
+
+// Optimized SDF evaluation using object data
+float evaluateObjectSDF(Object obj, vec3 worldPos) {
+    vec3 localPos = worldPos - vec3(obj.x, obj.y, obj.z);
+    localPos /= vec3(obj.i, obj.j, obj.k);
+
+    float dist = MAX_DIST_TO_TRAVEL;
+
+    // Apply height displacement if available
+    if (obj.heightID >= 0) {
+        vec2 uv = localPos.xy * obj.textureScale;
+        float heightDisp = texture(textureArray, vec3(uv, obj.heightID)).r;
+        localPos += normalize(localPos) * heightDisp * obj.displacementStrength;
+    }
+
+    switch (obj.objectType) {
+        case 1: // Sphere
+        dist = sdSphere(localPos, obj.i);
+        break;
+        case 0: // Box
+        dist = sdBox(localPos, vec3(obj.i, obj.j, obj.k));
+        break;
+        case 4: // Torus
+        dist = sdTorus(localPos, vec2(obj.i, obj.j));
+        break;
+        case 2: // Cylinder
+        dist = sdCylinder(localPos, vec3(obj.i, obj.j, obj.k));
+        break;
+    }
+
+    return dist * min(min(obj.i, obj.j), obj.k);
+}
+
+// BVH-accelerated scene SDF
+RayHit sceneSDFWithBVH(vec3 pos, vec3 rayDir) {
+    RayHit hit;
+    hit.dist = MAX_DIST_TO_TRAVEL;
+    hit.objectID = -1;
+
+    // BVH traversal stack
+    int stack[32];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0; // Start with root node
+
+    while (stackPtr > 0 && stackPtr < 32) {
+        int nodeIndex = stack[--stackPtr];
+        BVHNode node = nodes[nodeIndex];
+
+        // Check ray-AABB intersection
+        if (!rayAABBIntersect(pos, rayDir, node.boundsMin.xyz, node.boundsMax.xyz)) {
+            continue;
+        }
+
+        // If leaf node
+        if (node.child.x == -1) {
+            // Test objects in this leaf
+            for (int i = 0; i < node.child.w; i++) {
+                int objIndex = objectIndices[node.child.z + i];
+                if (objIndex >= u_countObjects) continue;
+
+                Object obj = allObjects[objIndex];
+                float dist = evaluateObjectSDF(obj, pos);
+
+                if (dist < hit.dist) {
+                    hit.dist = dist;
+                    hit.objectID = objIndex;
+                }
+            }
+        } else {
+            // Internal node - add children to stack
+            if (node.child.x >= 0 && stackPtr < 31) stack[stackPtr++] = node.child.x;
+            if (node.child.y >= 0 && stackPtr < 31) stack[stackPtr++] = node.child.y;
+        }
+    }
+
+    return hit;
+}
+
+// Calculate normal using gradient
+vec3 calculateNormal(vec3 pos) {
+    vec2 e = vec2(EPSILON, 0.0);
+    return normalize(vec3(
+    sceneSDFWithBVH(pos + e.xyy, vec3(0.0)).dist - sceneSDFWithBVH(pos - e.xyy, vec3(0.0)).dist,
+    sceneSDFWithBVH(pos + e.yxy, vec3(0.0)).dist - sceneSDFWithBVH(pos - e.yxy, vec3(0.0)).dist,
+    sceneSDFWithBVH(pos + e.yyx, vec3(0.0)).dist - sceneSDFWithBVH(pos - e.yyx, vec3(0.0)).dist
+    ));
+}
+
+// Stylized PBR lighting model
+vec3 stylizedPBRLighting(vec3 viewDir, vec3 normal, vec3 lightDir, vec3 lightColor, PBRMaps material, vec3 worldPos) {
+    float NdotL = max(dot(normal, lightDir), 0.0);
+    float NdotV = max(dot(normal, viewDir), 0.0);
+    vec3 H = normalize(lightDir + viewDir);
+    float NdotH = max(dot(normal, H), 0.0);
+    float VdotH = max(dot(viewDir, H), 0.0);
+
+    // Stylized diffuse with toon-like quantization
+    float diffuseLevel = floor(NdotL * 4.0) / 4.0;
+    vec3 diffuse = material.albedo * lightColor * diffuseLevel;
+
+    // Stylized specular with sharp highlight
+    float roughness = max(material.roughness, 0.04);
+    float alpha = roughness * roughness;
+    float specPower = 2.0 / (alpha * alpha) - 2.0;
+    float spec = pow(NdotH, specPower * 4.0); // Enhanced specular
+    spec = smoothstep(0.5, 0.51, spec); // Sharp cutoff for stylized look
+
+    // Fresnel approximation
+    vec3 F0 = mix(vec3(0.04), material.albedo, material.metallic);
+    vec3 fresnel = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
+
+    vec3 specular = fresnel * spec * lightColor;
+
+    // Add stylized rim lighting
+    float rim = 1.0 - NdotV;
+    rim = smoothstep(0.6, 1.0, rim);
+    vec3 rimColor = lightColor * rim * 0.3;
+
+    // Combine with AO
+    return (diffuse + specular + rimColor) * material.ao;
+}
+
+// Enhanced raymarching with early termination
+RayHit rayMarch(vec3 rayOrigin, vec3 rayDir) {
+    RayHit hit;
+    hit.dist = MAX_DIST_TO_TRAVEL;
+    hit.objectID = -1;
+
+    vec3 pos = rayOrigin;
+    float totalDist = 0.0;
+
+    for (float i = 0.0; i < MAX_STEPS; i++) {
+        RayHit stepHit = sceneSDFWithBVH(pos, rayDir);
+
+        if (stepHit.dist < MIN_DIST_TO_SDF) {
+            hit.dist = totalDist;
+            hit.objectID = stepHit.objectID;
+            hit.pos = pos;
+            hit.normal = calculateNormal(pos);
+
+            // Sample PBR materials if object found
+            if (hit.objectID >= 0) {
+                Object obj = allObjects[hit.objectID];
+                hit.material = samplePBRMaps(obj, pos);
+
+                // Apply normal mapping
+                vec3 tangent = normalize(cross(hit.normal, vec3(0.0, 1.0, 0.0)));
+                vec3 bitangent = cross(hit.normal, tangent);
+                mat3 TBN = mat3(tangent, bitangent, hit.normal);
+                hit.normal = normalize(TBN * hit.material.normalRGB);
+            }
+            break;
+        }
+
+        totalDist += stepHit.dist;
+        pos += rayDir * stepHit.dist;
+
+        if (totalDist > MAX_DIST_TO_TRAVEL) break;
+    }
+
+    return hit;
+}
+
+// Soft shadows with BVH optimization
+float softShadow(vec3 pos, vec3 lightDir, float minT, float maxT, float k) {
+    float res = 1.0;
+    float t = minT;
+
+    for (int i = 0; i < 32; i++) {
+        RayHit hit = sceneSDFWithBVH(pos + lightDir * t, lightDir);
+        if (hit.dist < 0.001) return 0.0;
+        res = min(res, k * hit.dist / t);
+        t += hit.dist;
+        if (t > maxT) break;
+    }
+
+    return clamp(res, 0.0, 1.0);
+}
+
+// Simple reflection for stylized look
+vec3 getReflection(vec3 pos, vec3 normal, vec3 viewDir, float metallic, float roughness) {
+    vec3 reflectDir = reflect(-viewDir, normal);
+
+    // Add some noise for stylized reflections
+    reflectDir += noise(pos * 10.0 + u_time) * roughness * 0.1;
+
+    RayHit reflectHit = rayMarch(pos + normal * 0.01, reflectDir);
+
+    if (reflectHit.objectID >= 0) {
+        vec3 lightDir = normalize(u_lightPos - reflectHit.pos);
+        return stylizedPBRLighting(-reflectDir, reflectHit.normal, lightDir,
+        vec3(1.0, 0.9, 0.8), reflectHit.material, reflectHit.pos) * metallic;
+    }
+
+    // Sky color for missed reflections
+    return mix(vec3(0.1, 0.15, 0.3), vec3(0.3, 0.6, 1.0), reflectDir.y * 0.5 + 0.5) * metallic;
+}
+
+void main() {
+    ivec2 coords = ivec2(gl_GlobalInvocationID.xy);
+    if (coords.x >= int(u_resolution.x) || coords.y >= int(u_resolution.y)) return;
+
+    // Ray setup
+    vec2 uv = (vec2(coords) - u_resolution * 0.5) / u_resolution.y;
+    vec3 camDir = normalize(u_camTarget - u_camPos);
+    vec3 camRight = normalize(cross(camDir, vec3(0.0, 1.0, 0.0)));
+    vec3 camUp = cross(camRight, camDir);
+
+    vec3 rayDir = normalize(camDir + uv.x * camRight + uv.y * camUp);
+
+    // Primary ray
+    RayHit hit = rayMarch(u_camPos, rayDir);
+
+    vec3 color = vec3(0.05, 0.1, 0.2); // Background
+
+    if (hit.objectID >= 0) {
+        vec3 viewDir = -rayDir;
+        vec3 lightDir = normalize(u_lightPos - hit.pos);
+        vec3 lightColor = vec3(1.0, 0.9, 0.8);
+
+        // Main lighting
+        color = stylizedPBRLighting(viewDir, hit.normal, lightDir, lightColor, hit.material, hit.pos);
+
+        // Soft shadows
+        float shadow = softShadow(hit.pos + hit.normal * 0.01, lightDir, 0.1, 10.0, 8.0);
+        color *= 0.3 + 0.7 * shadow;
+
+        // Reflections for metallic surfaces
+        if (hit.material.metallic > 0.1) {
+            vec3 reflection = getReflection(hit.pos, hit.normal, viewDir,
+            hit.material.metallic, hit.material.roughness);
+            color = mix(color, reflection, hit.material.metallic * 0.8);
+        }
+
+        // Ambient occlusion
+        color *= hit.material.ao;
+
+        // Stylized fog
+        float fogFactor = 1.0 - exp(-hit.dist * 0.05);
+        color = mix(color, vec3(0.1, 0.15, 0.3), fogFactor);
+    }
+
+    // Tone mapping and gamma correction
+    color = color / (color + vec3(1.0));
+    color = pow(color, vec3(1.0 / 2.2));
+
+    imageStore(resultImage, coords, vec4(color, 1.0));
+}

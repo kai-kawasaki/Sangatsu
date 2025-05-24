@@ -45,7 +45,8 @@ float getObject(Object object, vec3 pos) {
     // 4b) if there's a height map, push the surface along the primitive normal
     if (object.heightID >= 0) {
         // numerically computed primitive normal
-        vec3 N = analyticNormal(object, pos);
+//        vec3 N = analyticNormal(object, pos);
+        vec3 N = getPrimitiveNormal(object, pos);
 
         // sample [0..1] → center around zero
         float h = sampleDisplacement(pos, N, object.heightID, object.textureScale) - 0.5;
@@ -64,27 +65,26 @@ float getObject(Object object, vec3 pos) {
 // ----------------------------------------------------------------------------
 float sampleDisplacement(vec3 pos, vec3 N, int heightLayer, float scale) {
     // 1) transform into height‐map space
-    vec3 pp = pos * (1.0 / scale);
+    vec3 pp = pos * scale;
 
     // 2) compute the same face weights as triPlanarPBR
     vec3 w = abs(N);
     w = pow(w, vec3(5.0));
     w /= (w.x + w.y + w.z);
 
-    // 3) build UVs for each face, with your flips
-    // XY faces (Z axis)
-    vec2 uvXY = pp.xy * 0.5 + 0.5;
+    // 3) compute the UV coordinates for each face
+    vec2 uvXY = fract(pp.xy * 0.5 + 0.5);
+    vec2 uvXZ = fract(vec2(pp.x, pp.z) * 0.5 + 0.5);
+    vec2 uvYZ = fract(vec2(pp.z, pp.y) * 0.5 + 0.5);
+
+    // face flips for Minecraft-style UVs
+/*
     if (N.z < 0.0) uvXY.x = 1.0 - uvXY.x;
     uvXY.y = 1.0 - uvXY.y;
-
-    // XZ faces (Y axis)
-    vec2 uvXZ = vec2(pp.x, pp.z) * 0.5 + 0.5;
     if (N.y < 0.0) uvXZ.x = 1.0 - uvXZ.x;
-
-    // YZ faces (X axis)
-    vec2 uvYZ = vec2(pp.z, pp.y) * 0.5 + 0.5;
     if (N.x < 0.0) uvYZ.x = 1.0 - uvYZ.x;
     uvYZ.y = 1.0 - uvYZ.y;
+*/
 
     // 4) sample the R channel from each slice
     float hXY = texture(textureArray, vec3(uvXY, heightLayer)).r;
@@ -235,17 +235,24 @@ float calcSDF(vec3 pos, int start, int count) {
 //}
 
 vec3 getPrimitiveNormal(Object object, vec3 pos) {
-    // choose a VERY small offset
     const float h = EPSILON;
     return normalize(vec3(
-                     getObjectRaw(object, pos + vec3( h, 0, 0))
-                     - getObjectRaw(object, pos - vec3( h, 0, 0)),
-                     getObjectRaw(object, pos + vec3( 0, h, 0))
-                     - getObjectRaw(object, pos - vec3( 0, h, 0)),
-                     getObjectRaw(object, pos + vec3( 0, 0, h))
-                     - getObjectRaw(object, pos - vec3( 0, 0, h))
-                     ));
+        getObjectRaw(object, pos + vec3(h, 0, 0)) - getObjectRaw(object, pos - vec3(h, 0, 0)),
+        getObjectRaw(object, pos + vec3(0, h, 0)) - getObjectRaw(object, pos - vec3(0, h, 0)),
+        getObjectRaw(object, pos + vec3(0, 0, h)) - getObjectRaw(object, pos - vec3(0, 0, h))
+    ));
 }
+
+//vec3 getPrimitiveNormal(Object object, vec3 pos) {
+//    const float h = 0.005;
+//    const vec3 k = vec3(1, -1, 0);
+//    return normalize(
+//    k.xyy * getObjectRaw(object, pos + k.xyy * h) +
+//    k.yyx * getObjectRaw(object, pos + k.yyx * h) +
+//    k.yxy * getObjectRaw(object, pos + k.yxy * h) +
+//    k.xxx * getObjectRaw(object, pos + k.xxx * h)
+//    );
+//}
 
 vec3 analyticNormal(Object object, vec3 p) {
     // compute local-space point
