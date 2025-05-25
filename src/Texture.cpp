@@ -145,6 +145,8 @@ void Texture::bindPaths(const std::vector<std::string>& filePaths) {
 
     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+    _texturePaths = filePaths;
 }
 
 // Texture::Texture(const std::string &filePath) {

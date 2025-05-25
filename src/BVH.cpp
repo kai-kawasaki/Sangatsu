@@ -184,7 +184,7 @@ void BVHBuilder::generateSSBO() const {
         nodesSSBO.data(),
         GL_STATIC_DRAW
     );
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bvhNodeSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, bvhNodeSSBO);
 
     GLuint bvhIndexSSBO;
     glGenBuffers(1, &bvhIndexSSBO);
@@ -195,5 +195,5 @@ void BVHBuilder::generateSSBO() const {
         objectIndices.data(),
         GL_STATIC_DRAW
     );
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bvhIndexSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bvhIndexSSBO);
 }

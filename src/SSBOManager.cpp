@@ -22,7 +22,7 @@ SSBOManager::SSBOManager(const std::vector<Object>& allObjects)
       GL_DYNAMIC_STORAGE_BIT  // allows updates if needed
     );
     // Bind once to binding point 1
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _fullSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _fullSSBO);
 
     // Dynamic culled SSBO - Persistent mapped for high throughput (continuously updated).
     _ssbos.resize(FRAMES_IN_FLIGHT);

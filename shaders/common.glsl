@@ -18,11 +18,7 @@ struct Object {
     float displacementStrength;
 };
 
-layout (std430, binding = 0) buffer VisibleObjects {
-    Object visibleObjects[];
-};
-
-layout (std430, binding = 1) buffer AllObjects {
+layout (std430, binding = 0) buffer AllObjects {
     Object allObjects[];
 };
 
@@ -32,11 +28,11 @@ struct BVHNode {
     ivec4 child;      // x = left, y = right, z = start, w = count
 };
 
-layout (std430, binding = 2) buffer BVHNodes {
+layout (std430, binding = 1) buffer BVHNodes {
     BVHNode nodes[];
 };
 
-layout (std430, binding = 3) buffer BVHIndices {
+layout (std430, binding = 2) buffer BVHIndices {
     int objectIndices[];
 };
 
@@ -95,3 +91,12 @@ struct HitInfo {
     float distance;
     int objectID;
 };
+
+layout (local_size_x = 8, local_size_y = 8) in;
+layout (binding = 0, rgba32f) uniform writeonly image2D resultImage;
+
+layout (binding = 1, rgba16f) uniform image2D reflectionCache;
+layout (binding = 2, rgba16f) uniform image2D shadowCache;
+
+#define DEFAULTROUGHNESS 0.9
+#define DEFAULTMETALLIC 0.1

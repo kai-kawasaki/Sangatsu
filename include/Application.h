@@ -40,7 +40,6 @@ private:
     std::unique_ptr<RayMarcher>  _rayMarcher;
 
     std::vector<Object> _objects;
-    std::vector<std::size_t> _visibleIndices;
 
     float  _scrollOffset = 0.f;
     bool   _flashlightOn = false;

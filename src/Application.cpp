@@ -25,9 +25,6 @@
 #include <thread>
 #include <BVH.h>
 
-// static constexpr float kMaxTraceDistance   = 100.0f;
-// static constexpr float kHalfSize           = 0.865f;
-// static constexpr float kRadius             = glm::sqrt(3.0f) * kHalfSize;
 
 void logOpenGLInfo() {
     const GLubyte* vendor = glGetString(GL_VENDOR);
@@ -105,18 +102,18 @@ Application::Application(int w, int h, const char* t) {
         Object({4, 1, 3}, glm::vec3(0.5f), 10, {0, 1, 0}),
         // Object({4, 2, 5}, glm::vec3(0.5f), 1, 1, 2, 1, 0.5),
         // Object({0, 10, 0}, glm::vec3(0.5f), 10, {0, 1, 0}),
-        Object({5, 5, 6}, glm::vec3(0.5f), 0, {0, 0, 1}/*, 1, 0.5, 1*/),
+        Object({5.5, 5, 6}, glm::vec3(0.5f), 1, {0, 0, 1}/*, 1, 0.5, 1*/),
         Object({6, 5, 6}, glm::vec3(0.5f), 0, {1, 1, 0}/*, 1, 0.5, 0*/),
         Object({0, 0, 0}, {10,0.5,10}, 0, {0, 1, 0}),
-        // Object({0, 0, 0}, {10,0.5,10}, 0, 1, "stylized-grass1", *_texture, 0.75f, 0.01f),
+        // Object({0, 0, 0}, {10,0.5,10}, 0, 1, "Grass004_2K-PNG", *_texture, 0.125f, 0.1f),
         // Object({7,7,7}, glm::vec3(0.5), 1, 1, "vertical-streak-cliff", *_texture, 0.25f, 0.01f),
-        Object({5, 5, 1}, glm::vec3(1.0f), 11, {0.761, 0, 1}/*, 5, 0.3f, 1*/),
+        // Object({5, 5, 1}, glm::vec3(1.0f), 11, 1, "red-plaid", *_texture, 4.0f, 0.01/*, 5, 0.3f, 1*/),
         Object({1, 1, 1}, glm::vec3(0.5f), 0, {0.7, 0, 1}/*, 5, 0.3f*/),
-        Object({1, 3, 8}, glm::vec3(0.5f), 2, {0.7, 0.5, 1}/*, 5, 0.3f*/),
+        Object({1, 3, 8}, glm::vec3(0.5f), 2, {1.0, 1.0, 1.0f}/*, 5, 0.3f*/),
         Object({4, 1, 1}, glm::vec3(0.5f), 0, {1, 0, 1}/*, 5, 0.3f*/),
         Object({4, 1, 5}, glm::vec3(0.5f), 1, {0.5, 1, 1}/*, 5, 0.3f*/),
-        Object({5, 4, 4}, glm::vec3(0.5f), 0, 1, "chiseled-cobble", *_texture, 4.0f, 0.3f/*, 1, 0.5, 1*/),
-        Object({3, 4, 4}, glm::vec3(0.5f), 1, 1, "worn-shiny-metal", *_texture, 0.25f, 0.01f/*, 1, 0.5, 0*/),
+        Object({5, 4, 4}, glm::vec3(0.5f), 0, 1, "chiseled-cobble", *_texture, 1.0f, 0.3f/*, 1, 0.5, 1*/),
+        Object({3, 4, 4}, glm::vec3(0.5f), 1, 1, "worn-shiny-metal", *_texture, 3.0f, 0.1f/*, 1, 0.5, 0*/),
     };
 
     BVHBuilder bvh;
@@ -149,18 +146,48 @@ Application::Application(int w, int h, const char* t) {
     _fbo = std::make_unique<FBOManager>(w, h);
     GLuint colorTex = _fbo->getColorTexture();
     glBindImageTexture(0, colorTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-    // _fbo->bind();
     bvh.generateSSBO();
-
-    // ——— Disable culling: render all objects ———
-    // _visibleIndices.resize(_objects.size());
-    // std::iota(_visibleIndices.begin(), _visibleIndices.end(), 0);
-    // _ssbo->updateIndices(_visibleIndices, _frameIndex);
 
     _camPos   = glm::vec3(0.0f, 2.0f, -4.0f);
     _camera->setPosition(_camPos);
     _prevTime = glfwGetTime();
     glViewport(0, 0, w, h);
+
+
+
+    // In your initialization code
+    GLuint reflectionCache;
+    glGenTextures(1, &reflectionCache);
+    glBindTexture(GL_TEXTURE_2D, reflectionCache);
+
+    // Use half resolution for the cache to save memory
+    int cacheWidth = widthG;
+    int cacheHeight = heightG;
+
+    // Use RGBA16F for higher precision
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, cacheWidth, cacheHeight);
+
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // Bind as image for compute shader access
+    glBindImageTexture(1, reflectionCache, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
+
+    GLuint shadowCache;
+    glGenTextures(1, &shadowCache);
+    glBindTexture(GL_TEXTURE_2D, shadowCache);
+
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, cacheWidth, cacheHeight);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glBindImageTexture(2, shadowCache, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
 }
 
 void Application::run() {
@@ -231,42 +258,7 @@ void Application::loop() {
         // Update camera
         _camera->setPosition(_camPos);
 
-        // ——— CPU culling (distance + frustum) ———
         _frameIndex = (_frameIndex + 1) % FRAMES_IN_FLIGHT;
-        _visibleIndices.clear();
-
-        glm::vec3 camFwd   = _camera->forward();
-        glm::vec3 camRight = _camera->right();
-        glm::vec3 camUp    = _camera->up();
-
-        float tanHFOV = std::tan(_camera->halfHFOV());
-        float tanVFOV = std::tan(_camera->halfVFOV());
-
-//         for (size_t i = 0; i < _objects.size(); i++) {
-//             /* TODO: Reimplement culling with BVH.
-//             const auto& obj = _objects[i];
-//             glm::vec3 toObj = obj.position - _camPos;
-//
-//             // project onto camera axes
-//             float zc = glm::dot(toObj, camFwd);
-//             float xc = glm::dot(toObj, camRight);
-//             float yc = glm::dot(toObj, camUp);
-//
-//             // distance cull, expanded by radius
-//             if (zc + kRadius <= 0.0f || zc - kRadius > kMaxTraceDistance)
-//                 continue;
-//
-//             // frustum planes cull, expanded by radius
-//             float halfW = zc * tanHFOV;
-//             float halfH = zc * tanVFOV;
-//             if (xc >  halfW + kRadius || xc < -halfW - kRadius) continue;
-//             if (yc >  halfH + kRadius || yc < -halfH - kRadius) continue;
-//             */
-//
-//             _visibleIndices.push_back(i);
-//         }
-//
-//         _ssbo->updateIndices(_visibleIndices, _frameIndex);
 
         // Calculate sun position with circular motion
         float sunRadius = 500.0f; // Distance from origin
@@ -294,9 +286,8 @@ void Application::loop() {
             _camera->target(),
             flashlightOn,
             renderMode,
-            0,              // textureID is now unused
             sunPosition,
-            _visibleIndices.size()
+            _objects.size()
         );
 
         // 3) Blit the compute-written texture to the screen

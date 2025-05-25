@@ -68,7 +68,6 @@ void RayMarcher::render(const float width, const float height,
                         const glm::vec3& camTarget,
                         const bool flashlightOn,
                         const int renderMode,
-                        const GLuint textureID,
                         const glm::vec3& lightPos,
                         const int countObjects) const
 {

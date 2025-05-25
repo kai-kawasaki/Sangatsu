@@ -21,7 +21,6 @@ public:
                 const glm::vec3& camTarget,
                 bool flashlightOn,
                 int renderMode,
-                GLuint textureID,
                 const glm::vec3& lightPos,
                 int countObjects = 0) const;
 
