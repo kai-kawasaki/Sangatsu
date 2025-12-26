@@ -1,5 +1,11 @@
 # Ignore content built with CMake
 build/
+_deps/
+CMakeFiles/
+CMakeCache.txt
+*.a
+*.so
+bin/
 # IntelliJ IDEA files
 .idea/
 *.iml
