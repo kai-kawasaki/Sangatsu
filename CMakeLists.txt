@@ -1,99 +1,80 @@
-cmake_minimum_required(VERSION 3.10)
-project(opengl-mingw-boilerplate)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+cmake_minimum_required(VERSION 3.14)
+project(opengl-boilerplate LANGUAGES C CXX)
 
-# Add static linking for GCC runtime libraries
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++ -static")
+project(opengl-boilerplate LANGUAGES C CXX)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
-# Source and external package files
-set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
-set(EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
-aux_source_directory(${SRC_DIR} SOURCES)
-set(GLFW_DIR "${EXT_DIR}/glfw")
-set(GLAD_DIR "${EXT_DIR}/glad")
-set(GLM_DIR "${EXT_DIR}/glm")
-set(SOIL_DIR "${EXT_DIR}/soil")
-set(FREETYPE_DIR "${EXT_DIR}/freetype")
-link_directories(${GLFW_DIR}/lib ${SOIL_DIR}/lib ${FREETYPE_DIR}/lib)
-include_directories(${PROJECT_SOURCE_DIR}/include)
+# --- 1. Dependencies via FetchContent ---
+include(FetchContent)
 
-# Add the executable
-add_executable(${PROJECT_NAME} ${SOURCES}
-        include/Application.h
-        include/Window.h
-        include/InputManager.h
-        include/ShaderPreprocessor.h
-        include/Shader.h
-        include/Texture.h
-        include/Camera.h
-        include/SSBOManager.h
-        include/Object.h
-        include/Vertex.h
-        include/RayMarcher.h
-        include/Utilities.h
-        src/Application.cpp
-        src/Window.cpp
-        src/InputManager.cpp
-        src/ShaderPreprocessor.cpp
-        src/Shader.cpp
-        src/Texture.cpp
-        src/Camera.cpp
-        src/SSBOManager.cpp
-        src/Object.cpp
-        src/RayMarcher.cpp
-        src/Utilities.cpp
-        include/Globals.h
-        src/Globals.cpp
-        include/BVH.h
-        include/FBOManager.h
-        src/FBOManager.cpp
-        src/BVH.cpp
-)
-target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
-
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-        SHADERS_DIR="${CMAKE_SOURCE_DIR}/shaders"
-        TEXTURES_DIR="${CMAKE_SOURCE_DIR}/textures"
-)
-
-# Libraries
 # GLFW
-target_link_libraries(${PROJECT_NAME} glfw3)
-target_include_directories(${PROJECT_NAME} PRIVATE "${GLFW_DIR}/include")
-target_compile_definitions(${PROJECT_NAME} PRIVATE "GLFW_INCLUDE_NONE")
-
-# GLAD
-add_library(glad STATIC "${GLAD_DIR}/src/gl.c")
-target_include_directories(glad PUBLIC "${GLAD_DIR}/include")
-target_link_libraries(${PROJECT_NAME} glad ${CMAKE_DL_LIBS})
-
-# GLM
-target_include_directories(${PROJECT_NAME} PRIVATE "${GLM_DIR}")
-
-# SOIL
-target_link_libraries(${PROJECT_NAME} SOIL)
-target_link_libraries(${PROJECT_NAME} opengl32)
-target_include_directories(${PROJECT_NAME} PRIVATE "${SOIL_DIR}/include")
-
-# Freetype
-target_link_libraries(${PROJECT_NAME} freetype)
-target_include_directories(${PROJECT_NAME} PRIVATE "${FREETYPE_DIR}/include")
-
-# Portable Executable
-# Define the output directory for the portable app
-set(PORTABLE_OUTPUT_DIR ${PROJECT_BINARY_DIR}/PortableApp)
-
-# Custom target to package the project
-add_custom_target(Package ALL
-        COMMAND ${CMAKE_COMMAND} -E remove_directory ${PORTABLE_OUTPUT_DIR}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${PORTABLE_OUTPUT_DIR}
-
-        # Copy the executable
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> ${PORTABLE_OUTPUT_DIR}
-
-        # Copy resource directories
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/shaders ${PORTABLE_OUTPUT_DIR}/shaders
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/textures ${PORTABLE_OUTPUT_DIR}/textures
+FetchContent_Declare(glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG 3.3.8
+    FIND_PACKAGE_ARGS # Try system first, then fetch
 )
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+
+# GLM (Header only)
+FetchContent_Declare(glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.1
+)
+
+# FreeType
+FetchContent_Declare(freetype
+    GIT_REPOSITORY https://github.com/freetype/freetype.git
+    GIT_TAG VER-2-12-1
+)
+
+# STB (Single-file header-only libraries)
+FetchContent_Declare(stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG master
+)
+
+FetchContent_MakeAvailable(glfw glm freetype stb)
+
+# --- 2. OpenGL (Built-in) ---
+find_package(OpenGL REQUIRED)
+
+# --- 3. Executable & Sources ---
+# Using file(GLOB) is usually discouraged, but for a boilerplate, 
+# it's easier than listing 30 files manually.
+file(GLOB_RECURSE SOURCES "src/*.cpp" "external/glad/src/glad.c")
+
+add_executable(${PROJECT_NAME} ${SOURCES})
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE 
+    SHADERS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/shaders"
+    TEXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/textures"
+    GLFW_INCLUDE_NONE  # This also fixes your 'redefined' warning
+)
+
+# --- 4. Include Directories ---
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    ${stb_SOURCE_DIR}
+    include 
+    src
+    external/glad/include
+)
+
+# --- 5. Linking (The "Clean" Part) ---
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    glfw
+    freetype
+    glm::glm
+    OpenGL::GL
+    ${CMAKE_DL_LIBS} # Required for GLAD on Linux
+)
+
+# Windows-specific tweaks
+if(WIN32)
+    # Prevents "cannot find -lopengl32" errors by using the alias
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
+endif()

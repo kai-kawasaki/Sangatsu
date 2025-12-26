@@ -2,29 +2,26 @@
 // Created by kylez on 4/17/2025.
 //
 
-
 #include "Texture.h"
-#include <SOIL.h>
+#include <glad/glad.h>
 #include <iostream>
+#include <filesystem>
 
-#include "Texture.h"
-#include <SOIL.h>
-#include <iostream>
+// This must be defined in exactly one .cpp file
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 static void setupParameters(GLenum target) {
-    // wrap/filtering...
     glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-// Single-file ctor just delegates to array version:
+// Single-file ctor
 Texture::Texture(const std::string &filePath)
-: Texture(std::vector<std::string>{filePath})
+    : Texture(std::vector<std::string>{filePath})
 { }
-
-
 
 // Array ctor
 Texture::Texture(const std::vector<std::string> &filePaths) {
@@ -32,28 +29,21 @@ Texture::Texture(const std::vector<std::string> &filePaths) {
         std::cerr << "Texture array: no file paths provided\n";
         return;
     }
-
-    _texturePaths = filePaths;
-
     bindPaths(filePaths);
 }
 
+// Directory ctor
 Texture::Texture(const std::string &directory, bool recursive) {
     try {
         if (recursive) {
             for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) {
-                if (entry.is_regular_file()) {
-                    _texturePaths.push_back(entry.path().string());
-                }
+                if (entry.is_regular_file()) _texturePaths.push_back(entry.path().string());
             }
         } else {
             for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-                if (entry.is_regular_file()) {
-                    _texturePaths.push_back(entry.path().string());
-                }
+                if (entry.is_regular_file()) _texturePaths.push_back(entry.path().string());
             }
         }
-
     } catch (const std::filesystem::filesystem_error& e) {
         std::cerr << "Error accessing directory: " << e.what() << '\n';
     }
@@ -66,11 +56,69 @@ Texture::Texture(const std::string &directory, bool recursive) {
     bindPaths(_texturePaths);
 }
 
-
 Texture::~Texture() {
     if (_textureID) {
         glDeleteTextures(1, &_textureID);
     }
+}
+
+void Texture::bindPaths(const std::vector<std::string>& filePaths) {
+    // OpenGL expects (0,0) at the bottom-left, but images are top-left.
+    stbi_set_flip_vertically_on_load(true);
+
+    // 1. Load the first image to determine array dimensions
+    int w, h, channels;
+    unsigned char* firstImg = stbi_load(filePaths[0].c_str(), &w, &h, &channels, 4); // Force RGBA
+    if (!firstImg) {
+        std::cerr << "Failed to load reference texture: " << filePaths[0] 
+                  << " | Reason: " << stbi_failure_reason() << "\n";
+        return;
+    }
+
+    _width  = w;
+    _height = h;
+    _layers = static_cast<int>(filePaths.size());
+
+    glGenTextures(1, &_textureID);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, _textureID);
+    setupParameters(GL_TEXTURE_2D_ARRAY);
+
+    // 2. Allocate immutable storage
+    // Using 4 levels for mipmaps (you can calculate this properly if needed)
+    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 4, GL_RGBA8, _width, _height, _layers);
+
+    // Upload first image before freeing
+    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, _width, _height, 1, GL_RGBA, GL_UNSIGNED_BYTE, firstImg);
+    stbi_image_free(firstImg);
+
+    // 3. Upload subsequent layers
+    for (int layer = 1; layer < _layers; ++layer) {
+        int lw, lh, lc;
+        unsigned char* data = stbi_load(filePaths[layer].c_str(), &lw, &lh, &lc, 4);
+
+        if (!data) {
+            std::cerr << "Failed to load layer " << layer << ": " << filePaths[layer] << "\n";
+            continue;
+        }
+
+        if (lw != _width || lh != _height) {
+            std::cerr << "Warning: texture size mismatch in layer " << layer 
+                      << " (" << filePaths[layer] << ")\n";
+        }
+
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, layer, lw, lh, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        stbi_image_free(data);
+    }
+
+    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+    _texturePaths = filePaths;
+}
+
+void Texture::bind(GLuint unit) const {
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, _textureID);
 }
 
 int Texture::getTextureID(const std::string& fileName) const {
@@ -81,106 +129,3 @@ int Texture::getTextureID(const std::string& fileName) const {
     }
     return -1;
 }
-
-void Texture::bind(GLuint unit) const {
-    glActiveTexture(GL_TEXTURE0 + unit);
-    // if it's a single image, it's still in a 2D_ARRAY with 1 layer
-    glBindTexture(GL_TEXTURE_2D_ARRAY, _textureID);
-}
-
-void Texture::bindPaths(const std::vector<std::string>& filePaths) {
-    // First, load the first image to get dimensions
-    int w, h, channels;
-    unsigned char* firstImg = SOIL_load_image(
-        filePaths[0].c_str(), &w, &h, &channels, SOIL_LOAD_RGBA);
-    if (!firstImg) {
-        std::cerr << "Failed to load texture: " << filePaths[0] << "\n";
-        return;
-    }
-    SOIL_free_image_data(firstImg);
-
-    _width  = w;
-    _height = h;
-    _layers = static_cast<int>(filePaths.size());
-
-    // Create and bind the array texture
-    glGenTextures(1, &_textureID);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, _textureID);
-    setupParameters(GL_TEXTURE_2D_ARRAY);
-
-    // Allocate immutable storage: one level, RGBA8, w×h×layers
-    glTexStorage3D(GL_TEXTURE_2D_ARRAY,
-                   1,                // mip-levels
-                   GL_RGBA8,
-                   _width,
-                   _height,
-                   _layers);
-
-    // Now upload each layer
-    for (int layer = 0; layer < _layers; ++layer) {
-        int lw, lh, lc;
-        unsigned char* data = SOIL_load_image(
-            filePaths[layer].c_str(), &lw, &lh, &lc, SOIL_LOAD_RGBA);
-
-        if (!data) {
-            std::cerr << "Failed to load texture: " << filePaths[layer] << "\n";
-            continue;
-        }
-        if (lw != _width || lh != _height) {
-            std::cerr << "Warning: texture size mismatch in layer "
-                      << layer << "\n";
-        }
-
-        // copy into layer
-        glTexSubImage3D(GL_TEXTURE_2D_ARRAY,
-                        0,                  // mip level
-                        0, 0, layer,        // x,y,layer offset
-                        lw, lh, 1,          // width,height,depth=1
-                        GL_RGBA,
-                        GL_UNSIGNED_BYTE,
-                        data);
-
-        SOIL_free_image_data(data);
-    }
-
-    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-
-    _texturePaths = filePaths;
-}
-
-// Texture::Texture(const std::string &filePath) {
-//     glGenTextures(1,&_textureID);
-//     glBindTexture(GL_TEXTURE_2D,_textureID);
-//     // wrap/filtering...
-//     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
-//     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
-//     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
-//     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-//
-//     int w,h;
-//     unsigned char* img = SOIL_load_image(
-//         filePath.c_str(), &w, &h, nullptr, SOIL_LOAD_RGBA);
-//     if (img) {
-//         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,w,h,0,
-//                      GL_RGBA,GL_UNSIGNED_BYTE,img);
-//         glGenerateMipmap(GL_TEXTURE_2D);
-//         SOIL_free_image_data(img);
-//     } else {
-//         std::cerr<<"Failed to load texture: "<<filePath<<"\n";
-//     }
-//     glBindTexture(GL_TEXTURE_2D,0);
-// }
-//
-// Texture::~Texture() {
-//     glDeleteTextures(1,&_textureID);
-// }
-//
-// void Texture::bind(GLuint unit) const {
-//     glActiveTexture(GL_TEXTURE0+unit);
-//     glBindTexture(GL_TEXTURE_2D,_textureID);
-// }
-//
-// GLuint Texture::id() const {
-//     return _textureID;
-// }

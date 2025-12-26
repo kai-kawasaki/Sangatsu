@@ -6,7 +6,7 @@
 #include "InputManager.h"
 
 #include <Utilities.h>
-#include <glad/gl.h>
+#include <glad/glad.h>
 
 #include "Camera.h"
 #include <GLFW/glfw3.h>

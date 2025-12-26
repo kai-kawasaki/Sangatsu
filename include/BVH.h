@@ -8,7 +8,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "Object.h"
-#include <glad/gl.h>
+#include <glad/glad.h>
 
 struct AABB {
     glm::vec3 min, max;

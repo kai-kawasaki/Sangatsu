@@ -7,7 +7,7 @@
 
 #pragma once
 #include <vector>
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include "Object.h"
 
 class SSBOManager {

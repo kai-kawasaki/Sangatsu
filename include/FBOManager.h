@@ -6,7 +6,7 @@
 #define FBOMANAGER_H
 
 #pragma once
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include <vector>
 #include <glm/glm.hpp>
 

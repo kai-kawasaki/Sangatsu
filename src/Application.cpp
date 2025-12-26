@@ -11,7 +11,7 @@
 #include "SSBOManager.h"
 #include "RayMarcher.h"
 
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -41,9 +41,9 @@ Application::Application(int w, int h, const char* t) {
     _window = std::make_unique<Window>(w, h, t);
 
     // 2) Load GLAD
-    if (!gladLoaderLoadGL()) {
-        std::cerr << "ERROR: Failed to initialize GLAD\n";
-        std::exit(EXIT_FAILURE);
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { // This is GLAD 1.0 syntax
+        std::cerr << "Failed to initialize GLAD" << std::endl;
+        return;
     }
 
     // Log OpenGL information
