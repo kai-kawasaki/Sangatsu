@@ -15,6 +15,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -116,37 +117,18 @@ Application::Application(int w, int h, const char* t) {
         Object({3, 4, 4}, glm::vec3(0.5f), 1, 1, "worn-shiny-metal", *_texture, 3.0f, 0.1f/*, 1, 0.5, 0*/),
     };
 
-    BVHBuilder bvh;
-    bvh.build(_objects, 1);
+    _bvh = std::make_unique<BVHBuilder>();
+    _bvh->build(_objects, 1);
+    _bvh->uploadInitial();
 
-    for (int i = 0; i < bvh.nodes.size(); ++i) {
-        const auto &n = bvh.nodes[i];
-        std::cout
-            << "Node " << i
-            << " | bounds: [" << n.bounds.min.x << ", " << n.bounds.min.y << ", " << n.bounds.min.z
-            << " to "        << n.bounds.max.x << ", " << n.bounds.max.y << ", " << n.bounds.max.z << "]"
-            << " | left: "  << n.left
-            << " | right: " << n.right
-            << " | start: " << n.start
-            << " | count: " << n.count;
-
-        // if this is a leaf, print its object indices
-        if (n.left < 0 && n.count > 0) {
-            std::cout << " | objects:";
-            for (int j = 0; j < n.count; ++j) {
-                int objIdx = bvh.objectIndices[n.start + j];
-                std::cout << " " << objIdx;
-            }
-        }
-        std::cout << "\n";
-    }
+    _debugViz = std::make_unique<DebugVisualize>();
+    _debugViz->init(static_cast<float>(w), static_cast<float>(h));
 
     _ssbo       = std::make_unique<SSBOManager>(_objects);
     _rayMarcher = std::make_unique<RayMarcher>(*_shader);
     _fbo = std::make_unique<FBOManager>(w, h);
     GLuint colorTex = _fbo->getColorTexture();
     glBindImageTexture(0, colorTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-    bvh.generateSSBO();
 
     _camPos   = glm::vec3(0.0f, 2.0f, -4.0f);
     _camera->setPosition(_camPos);
@@ -258,7 +240,36 @@ void Application::loop() {
         // Update camera
         _camera->setPosition(_camPos);
 
+        // Debug visualization controls
+        static bool prevVKey = false;
+        bool currentVKey = glfwGetKey(win, GLFW_KEY_V) == GLFW_PRESS;
+        if (currentVKey && !prevVKey) {
+            _debugViz->cycleMode();
+        }
+        prevVKey = currentVKey;
+
         _frameIndex = (_frameIndex + 1) % FRAMES_IN_FLIGHT;
+
+        // Demo: animate object 1 (sphere) bouncing
+        {
+            float bounceY = 5.0f + 2.0f * std::sin(static_cast<float>(cur) * 2.0f);
+            _objects[1].position.y = bounceY;
+            markObjectDirty(1);
+        }
+
+        // BVH dynamic updates
+        if (!_dirtyObjects.empty()) {
+            _bvh->rebuildIfNeeded(_objects, _dirtyObjects, _rebuildThreshold, 1);
+            _bvh->refit(_objects, _dirtyObjects, _refitBudget, true);
+            _bvh->updateGPU();
+            _bvh->bindBuffers();
+            _ssbo->syncAllObjects(_objects);
+            // Validate BVH (optional debug)
+            // if (!_bvh->validate(_objects, false)) {
+            //     std::cerr << "BVH validation failed after refit!\n";
+            // }
+            _dirtyObjects.clear();
+        }
 
         // Calculate sun position with circular motion
         float sunRadius = 500.0f; // Distance from origin
@@ -302,11 +313,41 @@ void Application::loop() {
         );
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+        // 4) Render debug visualizations
+        if (_debugViz) {
+            const float zoom = _camera->zoom();
+            // Match ray marcher camera: half-FOV = atan(1 / zoom)
+            const float fov = 2.0f * std::atan(1.0f / zoom);
+            glm::mat4 projection = glm::perspective(
+                fov,
+                static_cast<float>(fbW) / static_cast<float>(fbH),
+                0.1f,
+                1000.0f
+            );
+            glm::mat4 view = _camera->getViewMatrix();
+            glm::mat4 viewProj = projection * view;
+
+            _debugViz->render(_bvh.get(), _objects, viewProj, static_cast<float>(dt));
+        }
+
         glfwSwapBuffers(win);
         glfwPollEvents();
     }
 }
 
 void Application::cleanup() {
+    if (_bvh) _bvh->cleanup();
+    if (_debugViz) _debugViz->cleanup();
     // unique_ptrs clean up automatically
+}
+void Application::markObjectDirty(const int objIndex) {
+    if (objIndex < 0 || objIndex >= static_cast<int>(_objects.size())) return;
+    _dirtyObjects.push_back(objIndex);
+}
+
+void Application::markAllObjectsDirty() {
+    _dirtyObjects.clear();
+    for (int i = 0; i < static_cast<int>(_objects.size()); ++i) {
+        _dirtyObjects.push_back(i);
+    }
 }

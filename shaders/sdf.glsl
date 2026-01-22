@@ -97,17 +97,25 @@ float sampleDisplacement(vec3 pos, vec3 N, int heightLayer, float scale) {
     + hYZ * w.x;
 }
 
-float calcSDF(vec3 pos, int start, int count) {
+vec2 calcSDFWithID(vec3 pos, int start, int count) {
     float minDist = MAX_DIST_TO_TRAVEL;
+    int hitId = -1;
 
     for (int i = 0; i < count; ++i) {
         int oid = objectIndices[start + i];
         Object o = allObjects[oid];
         float d = getObject(o, pos);
-        minDist = min(minDist, d);
+        if (d < minDist) {
+            minDist = d;
+            hitId = oid;
+        }
     }
 
-    return minDist;
+    return vec2(minDist, float(hitId));
+}
+
+float calcSDF(vec3 pos, int start, int count) {
+    return calcSDFWithID(pos, start, count).x;
 }
 
 //vec2 calcSDF(vec3 pos) {

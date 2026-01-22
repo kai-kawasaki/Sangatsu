@@ -4,7 +4,7 @@
 
 // Forward declarations
 vec2 intersectAABB(vec3 ro, vec3 invRd, vec3 bMin, vec3 bMax);
-float sphereTrace(vec3 ro, vec3 rd, float tMin, float tMax, int nodeIdx);
+HitInfo sphereTrace(vec3 ro, vec3 rd, float tMin, float tMax, int nodeIdx);
 HitInfo traceBVH(vec3 ro, vec3 rd);
 vec3 getCameraRay(vec2 uv);
 vec3 fastPBR(vec3 pos, vec3 rd, vec3 normal, int objID);
@@ -27,30 +27,35 @@ vec2 intersectAABB(vec3 ro, vec3 invRd, vec3 bMin, vec3 bMax) {
     return vec2(tNear, tFar);
 }
 
-float sphereTrace(vec3 ro, vec3 rd, float tMin, float tMax, int nodeIdx) {
+HitInfo sphereTrace(vec3 ro, vec3 rd, float tMin, float tMax, int nodeIdx) {
     float t = tMin;
+    HitInfo hit;
+    hit.distance = -1.0;
+    hit.objectID = -1;
 
-        BVHNode node = nodes[nodeIdx];
-        int start = node.child.z;
-        int count = node.child.w;
+    BVHNode node = nodes[nodeIdx];
+    int start = node.child.z;
+    int count = node.child.w;
 
     for(int i = 0; i < MAX_STEPS; ++i) {
         vec3 pos = ro + rd * t;
-        float d = calcSDF(pos, start, count);
+        vec2 distId = calcSDFWithID(pos, start, count);
+        float d = distId.x;
 
-        if(d < MIN_DIST_TO_SDF) return t;
+        if(d < MIN_DIST_TO_SDF) {
+            hit.distance = t;
+            hit.objectID = int(distId.y);
+            return hit;
+        }
         if(t > tMax) break;
 
-        // More conservative stepping for displaced surfaces
-        float stepMult = 0.7; // Even more conservative
-
-        // If we're close to surface, be extra careful
+        float stepMult = 0.7;
         if(d < 0.1) stepMult = 0.5;
 
         t += d * stepMult;
     }
 
-    return -1.0;
+    return hit;
 }
 
 // Highly optimized BVH traversal
@@ -83,10 +88,10 @@ HitInfo traceBVH(vec3 ro, vec3 rd) {
             float tEnd = min(tBox.y, closestHit);
 
             if(tStart < tEnd) {
-                float hit = sphereTrace(ro, rd, tStart, tEnd, nodeIdx);
-                if(hit > 0.0 && hit < closestHit) {
-                    closestHit = hit;
-                    hitObjID = objectIndices[nodeIdx];
+                HitInfo traceResult = sphereTrace(ro, rd, tStart, tEnd, nodeIdx);
+                if(traceResult.distance > 0.0 && traceResult.distance < closestHit) {
+                    closestHit = traceResult.distance;
+                    hitObjID = traceResult.objectID;
                 }
             }
         } else {

@@ -32,6 +32,8 @@ public:
     [[nodiscard]] float halfHFOV() const { return _halfHFOV; }
     [[nodiscard]] float aspect() const { return _aspect; }
 
+    [[nodiscard]] glm::mat4 getViewMatrix() const;
+
 private:
     double _theta, _phi;
     float _sensitivity;

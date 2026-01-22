@@ -15,7 +15,7 @@ public:
     SSBOManager(const std::vector<Object>& allObjects);
     ~SSBOManager();
     void updateIndices(const std::vector<size_t>& indices, int frame) const;
-    // void update(const std::vector<Object>& data) const;
+    void syncAllObjects(const std::vector<Object>& allObjects);
 private:
     std::vector<GLuint>      _ssbos;
     std::vector<Object*>     _mappedPtrs;
@@ -26,3 +26,4 @@ private:
 
 
 #endif //SSBOMANAGER_H
+

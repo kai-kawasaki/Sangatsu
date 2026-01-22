@@ -5,7 +5,11 @@
 #include "BVH.h"
 
 #include <algorithm>
+#include <future>
+#include <iostream>
+#include <limits>
 #include <numeric>
+#include <thread>
 
 static AABB mergeBounds(const AABB &a, const AABB &b) {
     return {
@@ -20,23 +24,19 @@ void BVHBuilder::build(const std::vector<Object> &objects, const int leafSize) {
     std::iota(objectIndices.begin(), objectIndices.end(), 0);
 
     nodes.clear();
-    nodes.reserve(objects.size() * 2); // reserve space for all nodes
+    nodes.reserve(objects.size() * 2);
+    objectToLeaf.assign(objects.size(), -1);
 
     buildRecursive(0, static_cast<int>(objects.size()), objects);
+
+    minDirtyNode = 0;
+    maxDirtyNode = static_cast<int>(nodes.size()) - 1;
 }
 
-AABB BVHBuilder::computeBounds(int objIdx, const Object &o) {
-    AABB b;
-    glm::vec3 p = o.position;
-    // 0 = box
-    // 1 = sphere
-    // 2 = cylinder
-    // 3 = cone
-    // 4 = torus
-    // 5 = plane
-    // 6 = capsule
-    // 7 = ellipsoid
-    // 10 = menger sponge
+AABB BVHBuilder::computeBounds(const int objIdx, const Object &o) const {
+    AABB b{};
+    const glm::vec3 p = o.position;
+
     switch (o.objectType) {
         case 0: { // box
             b.min = p - o.scale;
@@ -109,8 +109,8 @@ AABB BVHBuilder::computeBounds(int objIdx, const Object &o) {
     return b;
 }
 
-int BVHBuilder::buildRecursive(int start, int end, const std::vector<Object>& objects) {
-    int nodeIndex = static_cast<int>(nodes.size());
+int BVHBuilder::buildRecursive(const int start, const int end, const std::vector<Object>& objects) {
+    const int nodeIndex = static_cast<int>(nodes.size());
     nodes.push_back(BVHNode());
     BVHNode& node = nodes.back();
 
@@ -122,78 +122,316 @@ int BVHBuilder::buildRecursive(int start, int end, const std::vector<Object>& ob
         bounds = mergeBounds(bounds, computeBounds(idx, objects[idx]));
     }
     node.bounds = bounds;
+    node.parent = -1;
 
-    int count = end - start;
+    const int count = end - start;
     if (count <= leafSize) {
-        // leaf node
         node.left  = -1;
         node.right = -1;
         node.start = start;
         node.count = count;
-    } else {
-        // pick longest axis
-        glm::vec3 ext = bounds.max - bounds.min;
-        int axis = (ext.x > ext.y && ext.x > ext.z) ? 0
-                   : (ext.y > ext.z)             ? 1
-                   : 2;
 
-        // sort by centroid on that axis
+        for (int i = 0; i < count; ++i) {
+            const int objIdx = objectIndices[start + i];
+            if (objIdx >= 0 && objIdx < static_cast<int>(objectToLeaf.size())) {
+                objectToLeaf[objIdx] = nodeIndex;
+            }
+        }
+    } else {
+        glm::vec3 ext = bounds.max - bounds.min;
+        const int axis = (ext.x > ext.y && ext.x > ext.z) ? 0
+                       : (ext.y > ext.z)                  ? 1
+                                                         : 2;
+
         std::sort(objectIndices.begin() + start,
                   objectIndices.begin() + end,
-                  [&](int a, int b) {
-                      AABB ba = computeBounds(a, objects[a]);
-                      AABB bb = computeBounds(b, objects[b]);
-                      float ca = 0.5f * (ba.min[axis] + ba.max[axis]);
-                      float cb = 0.5f * (bb.min[axis] + bb.max[axis]);
+                  [&](const int a, const int b) {
+                      const AABB ba = computeBounds(a, objects[a]);
+                      const AABB bb = computeBounds(b, objects[b]);
+                      const float ca = 0.5f * (ba.min[axis] + ba.max[axis]);
+                      const float cb = 0.5f * (bb.min[axis] + bb.max[axis]);
                       return ca < cb;
                   });
 
-        int mid = start + count / 2;
+        const int mid = start + count / 2;
         node.start = -1;
         node.count = 0;
         node.left  = buildRecursive(start, mid, objects);
         node.right = buildRecursive(mid, end, objects);
+        nodes[node.left].parent  = nodeIndex;
+        nodes[node.right].parent = nodeIndex;
     }
 
     return nodeIndex;
 }
 
-struct BVHNodeSSBO {
-    glm::vec3 min; float _pad0;
-    glm::vec3 max; float _pad1;
-    glm::ivec4 child;
-};
+void BVHBuilder::updateLeafBounds(const int leafIdx, const std::vector<Object>& objects) {
+    if (leafIdx < 0 || leafIdx >= static_cast<int>(nodes.size())) return;
+    BVHNode& node = nodes[leafIdx];
+    if (node.left >= 0) return; // not a leaf
 
-void BVHBuilder::generateSSBO() const {
+    int firstObj = objectIndices[node.start];
+    AABB bounds = computeBounds(firstObj, objects[firstObj]);
+    for (int i = 1; i < node.count; ++i) {
+        const int objIdx = objectIndices[node.start + i];
+        bounds = mergeBounds(bounds, computeBounds(objIdx, objects[objIdx]));
+    }
+    node.bounds = bounds;
+    if (minDirtyNode < 0 || leafIdx < minDirtyNode) minDirtyNode = leafIdx;
+    if (leafIdx > maxDirtyNode) maxDirtyNode = leafIdx;
+}
+
+void BVHBuilder::propagateBoundsUp(int nodeIdx) {
+    int current = nodeIdx;
+    while (current >= 0) {
+        BVHNode& n = nodes[current];
+        if (n.left >= 0 && n.right >= 0) {
+            n.bounds = mergeBounds(nodes[n.left].bounds, nodes[n.right].bounds);
+        }
+        if (minDirtyNode < 0 || current < minDirtyNode) minDirtyNode = current;
+        if (current > maxDirtyNode) maxDirtyNode = current;
+        current = n.parent;
+    }
+}
+
+void BVHBuilder::threadedUpdateLeaves(const std::vector<int>& leaves,
+                                      const std::vector<Object>& objects) {
+    if (leaves.empty()) return;
+    const std::size_t workerCount = std::max(1u, std::thread::hardware_concurrency());
+    const std::size_t chunk = (leaves.size() + workerCount - 1) / workerCount;
+
+    std::vector<AABB> computed(leaves.size());
+    std::vector<std::future<void>> jobs;
+    jobs.reserve(workerCount);
+
+    for (std::size_t w = 0; w < workerCount; ++w) {
+        const std::size_t begin = w * chunk;
+        if (begin >= leaves.size()) break;
+        const std::size_t end = std::min(leaves.size(), begin + chunk);
+        jobs.push_back(std::async(std::launch::async, [&, begin, end]() {
+            for (std::size_t i = begin; i < end; ++i) {
+                const int leafIdx = leaves[i];
+                if (leafIdx < 0 || leafIdx >= static_cast<int>(nodes.size())) continue;
+                const BVHNode& n = nodes[leafIdx];
+                int firstObj = objectIndices[n.start];
+                AABB bounds = computeBounds(firstObj, objects[firstObj]);
+                for (int j = 1; j < n.count; ++j) {
+                    const int objIdx = objectIndices[n.start + j];
+                    bounds = mergeBounds(bounds, computeBounds(objIdx, objects[objIdx]));
+                }
+                computed[i] = bounds;
+            }
+        }));
+    }
+
+    for (auto& j : jobs) j.wait();
+
+    for (std::size_t i = 0; i < leaves.size(); ++i) {
+        const int leafIdx = leaves[i];
+        if (leafIdx < 0 || leafIdx >= static_cast<int>(nodes.size())) continue;
+        nodes[leafIdx].bounds = computed[i];
+        if (minDirtyNode < 0 || leafIdx < minDirtyNode) minDirtyNode = leafIdx;
+        if (leafIdx > maxDirtyNode) maxDirtyNode = leafIdx;
+    }
+}
+
+void BVHBuilder::refit(const std::vector<Object>& objects,
+                       const std::vector<int>& dirtyObjects,
+                       const int maxRefitPerFrame,
+                       const bool multithread) {
+    if (nodes.empty()) return;
+    if (dirtyObjects.empty()) return;
+
+    std::vector<int> leaves;
+    leaves.reserve(dirtyObjects.size());
+    int processed = 0;
+    for (int obj : dirtyObjects) {
+        if (maxRefitPerFrame > 0 && processed >= maxRefitPerFrame) break;
+        if (obj < 0 || obj >= static_cast<int>(objectToLeaf.size())) continue;
+        const int leafIdx = objectToLeaf[obj];
+        if (leafIdx >= 0) {
+            leaves.push_back(leafIdx);
+            ++processed;
+        }
+    }
+
+    std::sort(leaves.begin(), leaves.end());
+    leaves.erase(std::unique(leaves.begin(), leaves.end()), leaves.end());
+
+    if (leaves.empty()) return;
+
+    if (multithread && leaves.size() > 4) {
+        threadedUpdateLeaves(leaves, objects);
+    } else {
+        for (const int leafIdx : leaves) updateLeafBounds(leafIdx, objects);
+    }
+
+    for (const int leafIdx : leaves) propagateBoundsUp(leafIdx);
+}
+
+void BVHBuilder::rebuildIfNeeded(const std::vector<Object>& objects,
+                                 const std::vector<int>& dirtyObjects,
+                                 const float rebuildRatio,
+                                 const int requestedLeafSize) {
+    const float ratio = static_cast<float>(dirtyObjects.size()) /
+                        static_cast<float>(std::max<std::size_t>(1, objects.size()));
+    const bool needsRebuild = ratio >= rebuildRatio ||
+                              static_cast<int>(objects.size()) != static_cast<int>(objectIndices.size());
+    if (!needsRebuild) return;
+
+    build(objects, requestedLeafSize);
+    writeFullBuffers();
+    bindBuffers();
+}
+
+void BVHBuilder::ensureBuffers() {
+    if (gpuAllocated) return;
+
+    glGenBuffers(1, &nodeSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, nodeSSBO);
+    const std::size_t maxNodesBytes = std::max<std::size_t>(1, nodes.size()) * sizeof(BVHNodeSSBO);
+    glBufferStorage(
+        GL_SHADER_STORAGE_BUFFER,
+        maxNodesBytes,
+        nullptr,
+        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT | GL_DYNAMIC_STORAGE_BIT
+    );
+    mappedNodes = static_cast<BVHNodeSSBO*>(glMapBufferRange(
+        GL_SHADER_STORAGE_BUFFER,
+        0,
+        maxNodesBytes,
+        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT
+    ));
+
+    glGenBuffers(1, &indexSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, indexSSBO);
+    const std::size_t maxIndexBytes = std::max<std::size_t>(1, objectIndices.size()) * sizeof(int);
+    glBufferStorage(
+        GL_SHADER_STORAGE_BUFFER,
+        maxIndexBytes,
+        nullptr,
+        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT | GL_DYNAMIC_STORAGE_BIT
+    );
+    mappedIndices = static_cast<int*>(glMapBufferRange(
+        GL_SHADER_STORAGE_BUFFER,
+        0,
+        maxIndexBytes,
+        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT
+    ));
+
+    gpuAllocated = true;
+}
+
+void BVHBuilder::writeFullBuffers() {
+    ensureBuffers();
+    if (!mappedNodes || !mappedIndices) return;
+
     std::vector<BVHNodeSSBO> nodesSSBO;
     nodesSSBO.reserve(nodes.size());
     for (const auto& node : nodes) {
-        BVHNodeSSBO n;
-        n.min = node.bounds.min;
-        n.max = node.bounds.max;
-        n.child = glm::ivec4(node.left, node.right, node.start, node.count);
+        BVHNodeSSBO n{};
+        n.boundsMin = glm::vec4(node.bounds.min, 0.0f);
+        n.boundsMax = glm::vec4(node.bounds.max, 0.0f);
+        n.child     = glm::ivec4(node.left, node.right, node.start, node.count);
         nodesSSBO.push_back(n);
     }
 
-    GLuint bvhNodeSSBO;
-    glGenBuffers(1, &bvhNodeSSBO);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, bvhNodeSSBO);
-    glBufferData(
-        GL_SHADER_STORAGE_BUFFER,
-        nodesSSBO.size() * sizeof(BVHNodeSSBO),
-        nodesSSBO.data(),
-        GL_STATIC_DRAW
-    );
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, bvhNodeSSBO);
+    std::copy(nodesSSBO.begin(), nodesSSBO.end(), mappedNodes);
+    std::copy(objectIndices.begin(), objectIndices.end(), mappedIndices);
 
-    GLuint bvhIndexSSBO;
-    glGenBuffers(1, &bvhIndexSSBO);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, bvhIndexSSBO);
-    glBufferData(
-        GL_SHADER_STORAGE_BUFFER,
-        objectIndices.size() * sizeof(int),
-        objectIndices.data(),
-        GL_STATIC_DRAW
-    );
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bvhIndexSSBO);
+    glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
+    minDirtyNode = 0;
+    maxDirtyNode = static_cast<int>(nodes.size()) - 1;
+}
+
+void BVHBuilder::uploadInitial() {
+    writeFullBuffers();
+    bindBuffers();
+}
+
+void BVHBuilder::updateGPU() {
+    if (minDirtyNode < 0 || maxDirtyNode < 0 || nodes.empty()) return;
+    updateGPU(minDirtyNode, maxDirtyNode);
+    minDirtyNode = -1;
+    maxDirtyNode = -1;
+}
+
+void BVHBuilder::updateGPU(const int minNode, const int maxNode) {
+    if (!mappedNodes || nodes.empty()) return;
+    const int clampedMin = std::max(0, minNode);
+    const int clampedMax = std::min(static_cast<int>(nodes.size()) - 1, maxNode);
+    if (clampedMin > clampedMax) return;
+
+    std::vector<BVHNodeSSBO> nodesSSBO;
+    nodesSSBO.reserve(static_cast<std::size_t>(clampedMax - clampedMin + 1));
+    for (int i = clampedMin; i <= clampedMax; ++i) {
+        const auto& node = nodes[i];
+        BVHNodeSSBO n{};
+        n.boundsMin = glm::vec4(node.bounds.min, 0.0f);
+        n.boundsMax = glm::vec4(node.bounds.max, 0.0f);
+        n.child     = glm::ivec4(node.left, node.right, node.start, node.count);
+        nodesSSBO.push_back(n);
+    }
+
+    std::copy(nodesSSBO.begin(), nodesSSBO.end(), mappedNodes + clampedMin);
+    glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
+}
+
+void BVHBuilder::bindBuffers() const {
+    if (!gpuAllocated) return;
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, nodeSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, indexSSBO);
+}
+
+void BVHBuilder::cleanup() {
+    if (mappedNodes) {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, nodeSSBO);
+        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    }
+    if (mappedIndices) {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, indexSSBO);
+        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    }
+    if (nodeSSBO) glDeleteBuffers(1, &nodeSSBO);
+    if (indexSSBO) glDeleteBuffers(1, &indexSSBO);
+    mappedNodes = nullptr;
+    mappedIndices = nullptr;
+    nodeSSBO = 0;
+    indexSSBO = 0;
+    gpuAllocated = false;
+}
+
+bool BVHBuilder::validate(const std::vector<Object>& objects, const bool verbose) const {
+    bool ok = true;
+    for (std::size_t i = 0; i < nodes.size(); ++i) {
+        const auto& n = nodes[i];
+        AABB expected{};
+        if (n.left < 0) {
+            if (n.count <= 0) continue;
+            int firstObj = objectIndices[n.start];
+            expected = computeBounds(firstObj, objects[firstObj]);
+            for (int j = 1; j < n.count; ++j) {
+                int objIdx = objectIndices[n.start + j];
+                expected = mergeBounds(expected, computeBounds(objIdx, objects[objIdx]));
+            }
+        } else {
+            expected = mergeBounds(nodes[n.left].bounds, nodes[n.right].bounds);
+        }
+
+        const bool mismatch = glm::any(glm::greaterThan(expected.min, n.bounds.min + glm::vec3(1e-3f))) ||
+                              glm::any(glm::lessThan(expected.min, n.bounds.min - glm::vec3(1e-3f))) ||
+                              glm::any(glm::greaterThan(expected.max, n.bounds.max + glm::vec3(1e-3f))) ||
+                              glm::any(glm::lessThan(expected.max, n.bounds.max - glm::vec3(1e-3f)));
+        if (mismatch) {
+            ok = false;
+            if (verbose) {
+                std::cerr << "BVH node mismatch at " << i << " expected ["
+                          << expected.min.x << ", " << expected.min.y << ", " << expected.min.z << "] -> ["
+                          << expected.max.x << ", " << expected.max.y << ", " << expected.max.z << "] got ["
+                          << n.bounds.min.x << ", " << n.bounds.min.y << ", " << n.bounds.min.z << "] -> ["
+                          << n.bounds.max.x << ", " << n.bounds.max.y << ", " << n.bounds.max.z << "]\n";
+            }
+        }
+    }
+    return ok;
 }

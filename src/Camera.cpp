@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "Utilities.h"
 #include <cmath>
+#include <glm/gtc/matrix_transform.hpp>
 #include "Globals.h"
 
 Camera::Camera() : _theta(45.0*PI/180.0),
@@ -73,3 +74,6 @@ void Camera::updateVectors() {
 
 glm::vec3 Camera::position()    const { return _position;    }
 glm::vec3 Camera::target() const { return _target; }
+glm::mat4 Camera::getViewMatrix() const {
+    return glm::lookAt(_position, _position + _forward, _up);
+}

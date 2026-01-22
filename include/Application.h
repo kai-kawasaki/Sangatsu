@@ -19,11 +19,15 @@
 #include "RayMarcher.h"
 #include <memory>
 #include "FBOManager.h"
+#include "BVH.h"
+#include "DebugVisualize.h"
 
 class Application {
 public:
     Application(int w,int h,const char* title);
     void run();
+    void markObjectDirty(int objIndex);
+    void markAllObjectsDirty();
 
 private:
     // void init();
@@ -38,8 +42,13 @@ private:
     std::unique_ptr<SSBOManager> _ssbo;
     std::unique_ptr<FBOManager> _fbo;
     std::unique_ptr<RayMarcher>  _rayMarcher;
+    std::unique_ptr<BVHBuilder>  _bvh;
+    std::unique_ptr<DebugVisualize> _debugViz;
 
     std::vector<Object> _objects;
+    std::vector<int> _dirtyObjects;
+    int _refitBudget = -1;
+    float _rebuildThreshold = 0.5f;
 
     float  _scrollOffset = 0.f;
     bool   _flashlightOn = false;
